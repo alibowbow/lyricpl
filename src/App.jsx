@@ -7,21 +7,26 @@ import { SONG, buildWords, buildTiming, TRANSLATION_LANGS, RTL_LANGS } from './d
 const SUNG = '#fcd34d'; // warm amber for the original line
 const SUNG_RO = '#67e8f9'; // cool cyan for the romanization
 const TOTAL = SONG.lines.length;
-const OTHER_LANGS = TRANSLATION_LANGS.filter((c) => c !== 'EN');
+// Keep the on-screen subtitle list short so it never pushes the controls off
+// the bottom of the screen. EN shows as a primary line; these show below it.
+const GRID_LANGS = ['JA', 'ZH', 'ES', 'FR', 'RU', 'AR'].filter((c) => TRANSLATION_LANGS.includes(c));
 
 const clampBpm = (v) => Math.min(200, Math.max(40, parseInt(v, 10) || SONG.defaultBpm));
 
-// Which visualizer scene each lyric line belongs to. Repeated sections reuse a
-// scene; the song therefore cuts between several distinct scenes as it plays.
+// Which visualizer scene each lyric line belongs to — 12 distinct scenes
+// (day and night) so the song cuts through many different backdrops.
 function sceneForLine(i) {
-  if (i <= 5) return 'street'; // chorus 1 — heading toward you
-  if (i <= 9) return 'room'; // verse 1 — alone, looking back
-  if (i <= 15) return 'street'; // chorus 2
-  if (i <= 23) return 'door'; // post-chorus + "knockin' on your door"
+  if (i <= 3) return 'street'; // chorus 1 — rainy night, heading to you
+  if (i <= 7) return 'room'; // verse 1 — alone, phone glowing
+  if (i <= 11) return 'day'; // daytime — brighter days / time has passed
+  if (i <= 15) return 'citywalk'; // daytime city
+  if (i <= 19) return 'house'; // "would you open up if I knocked on your door"
+  if (i <= 23) return 'neon'; // "knockin' on your door" — neon rain
   if (i <= 27) return 'storm'; // rap — "smoke in black night, we so dead"
-  if (i <= 33) return 'street'; // chorus 3
-  if (i <= 37) return 'door'; // post-chorus 2
-  if (i <= 44) return 'boat'; // bridge — rowing, "답을 찾은 rover, 난 노 저어"
+  if (i <= 31) return 'rooftop'; // night rooftop over the city
+  if (i <= 35) return 'train'; // night train
+  if (i <= 39) return 'boat'; // bridge — rowing, "난 노 저어"
+  if (i <= 43) return 'sunset'; // warm resolve
   return 'dawn'; // "it's not over" — the door opens
 }
 
@@ -58,7 +63,7 @@ export default function App() {
   // English-sung lines), avoiding duplicate text.
   const primaryEn = line.t.EN && line.t.EN !== line.o ? line.t.EN : null;
   const otherLangs = useMemo(
-    () => OTHER_LANGS.filter((c) => line.t[c] && line.t[c] !== line.o),
+    () => GRID_LANGS.filter((c) => line.t[c] && line.t[c] !== line.o),
     [line],
   );
 
