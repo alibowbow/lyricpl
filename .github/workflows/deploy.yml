@@ -33,6 +33,10 @@ jobs:
         run: npm run build
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          # Enable Pages and switch it to the "GitHub Actions" build type
+          # automatically, even if it was previously serving from a branch.
+          enablement: true
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
