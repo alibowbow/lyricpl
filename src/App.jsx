@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion';
 import { Play, Pause, RotateCcw, SkipBack, SkipForward, Music4 } from 'lucide-react';
 import ComeOverVisuals from './components/ComeOverVisuals.jsx';
-import { SONG, buildWords, buildTiming, TRANSLATION_LANGS, RTL_LANGS, LANG_LABELS } from './data/lyrics.js';
+import { SONG, buildWords, buildTiming, TRANSLATION_LANGS, RTL_LANGS } from './data/lyrics.js';
 
 const SUNG = '#fcd34d'; // warm amber for the original line
 const SUNG_RO = '#67e8f9'; // cool cyan for the romanization
@@ -10,6 +10,20 @@ const TOTAL = SONG.lines.length;
 const OTHER_LANGS = TRANSLATION_LANGS.filter((c) => c !== 'EN');
 
 const clampBpm = (v) => Math.min(200, Math.max(40, parseInt(v, 10) || SONG.defaultBpm));
+
+// Which visualizer scene each lyric line belongs to. Repeated sections reuse a
+// scene; the song therefore cuts between several distinct scenes as it plays.
+function sceneForLine(i) {
+  if (i <= 5) return 'street'; // chorus 1 — heading toward you
+  if (i <= 9) return 'room'; // verse 1 — alone, looking back
+  if (i <= 15) return 'street'; // chorus 2
+  if (i <= 23) return 'door'; // post-chorus + "knockin' on your door"
+  if (i <= 27) return 'storm'; // rap — "smoke in black night, we so dead"
+  if (i <= 33) return 'street'; // chorus 3
+  if (i <= 37) return 'door'; // post-chorus 2
+  if (i <= 44) return 'boat'; // bridge — rowing, "답을 찾은 rover, 난 노 저어"
+  return 'dawn'; // "it's not over" — the door opens
+}
 
 // A karaoke word that warms up once it has been "sung".
 const Word = ({ text, on, color, dim }) => (
@@ -105,7 +119,6 @@ export default function App() {
   }, [lineIndex, goToLine, restart]);
 
   const onBpmBlur = (e) => setBpm(clampBpm(e.target.value));
-  const progress = TOTAL > 1 ? lineIndex / (TOTAL - 1) : 0;
 
   return (
     <div className="flex h-[100dvh] w-full items-center justify-center bg-black">
@@ -113,15 +126,14 @@ export default function App() {
         <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-indigo-950 via-slate-950 to-black" />
 
         {/* --- Visualizer --- */}
-        <div className="relative z-10 h-[36%] w-full flex-shrink-0">
+        <div className="relative z-10 h-[34%] w-full flex-shrink-0">
           <ComeOverVisuals
             key={visualKey}
             isPlaying={isPlaying}
-            bpm={clampBpm(bpm)}
             pulse={lineIndex * 1000 + wordIndex}
-            progress={progress}
+            scene={sceneForLine(lineIndex)}
           />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-slate-950" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent to-slate-950" />
           <div className="pointer-events-none absolute left-4 top-4 text-left">
             <h1 className="text-lg font-bold tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
               {SONG.title}
@@ -152,17 +164,16 @@ export default function App() {
             {primaryEn && <p className="mt-1.5 text-sm leading-snug text-white/85">{primaryEn}</p>}
           </div>
 
-          {/* Multilingual subtitle grid */}
-          <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto border-t border-white/10 pt-2">
-            <ul className="space-y-1 text-left">
+          {/* Multilingual subtitles — one clean, truncated line per language */}
+          <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto border-t border-white/10 pt-1.5">
+            <ul className="space-y-0.5 text-left">
               {otherLangs.map((code) => (
-                <li key={code} className="flex items-start gap-2 leading-snug">
-                  <span className="w-16 flex-shrink-0 text-right text-[10px] font-semibold uppercase tracking-wide text-amber-200/60">
-                    {LANG_LABELS[code]}
-                  </span>
+                <li key={code} className="flex items-baseline gap-2">
+                  <span className="w-8 flex-shrink-0 text-right text-[11px] font-bold text-amber-200/70">{code}</span>
                   <span
                     dir={RTL_LANGS.includes(code) ? 'rtl' : 'ltr'}
-                    className="flex-1 text-[12px] text-white/65"
+                    title={line.t[code]}
+                    className="min-w-0 flex-1 truncate text-[13px] leading-relaxed text-white/85"
                   >
                     {line.t[code]}
                   </span>
