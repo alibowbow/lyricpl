@@ -2,15 +2,16 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion';
 import { Play, Pause, RotateCcw, SkipBack, SkipForward, Music4 } from 'lucide-react';
 import ComeOverVisuals from './components/ComeOverVisuals.jsx';
-import { SONG, buildWords, buildTiming } from './data/lyrics.js';
+import { SONG, buildWords, buildTiming, TRANSLATION_LANGS, RTL_LANGS, LANG_LABELS } from './data/lyrics.js';
 
 const SUNG = '#fcd34d'; // warm amber for the original line
 const SUNG_RO = '#67e8f9'; // cool cyan for the romanization
 const TOTAL = SONG.lines.length;
+const OTHER_LANGS = TRANSLATION_LANGS.filter((c) => c !== 'EN');
 
 const clampBpm = (v) => Math.min(200, Math.max(40, parseInt(v, 10) || SONG.defaultBpm));
 
-// A single karaoke word that warms up once it has been "sung".
+// A karaoke word that warms up once it has been "sung".
 const Word = ({ text, on, color, dim }) => (
   <motion.span
     className="relative inline-block"
@@ -38,14 +39,21 @@ export default function App() {
   const line = SONG.lines[lineIndex];
   const words = useMemo(() => buildWords(line), [line]);
 
-  // Beat-driven karaoke engine: highlight each word in turn, then advance.
+  // Translations to show: the EN "primary" row, then the other-language grid.
+  // Any translation identical to the original line is hidden (e.g. EN for
+  // English-sung lines), avoiding duplicate text.
+  const primaryEn = line.t.EN && line.t.EN !== line.o ? line.t.EN : null;
+  const otherLangs = useMemo(
+    () => OTHER_LANGS.filter((c) => line.t[c] && line.t[c] !== line.o),
+    [line],
+  );
+
+  // Beat-driven karaoke engine: highlight each word, then advance the line.
   useEffect(() => {
     clearTimers();
     if (!isPlaying) return;
-    const safeBpm = clampBpm(bpm);
-    const beatMs = 60000 / safeBpm;
+    const beatMs = 60000 / clampBpm(bpm);
     const timing = buildTiming(words.length);
-
     let delay = 0;
     timing.forEach((beats, i) => {
       timers.current.push(setTimeout(() => setWordIndex(i), delay));
@@ -57,15 +65,17 @@ export default function App() {
         setWordIndex(-1);
       }, delay),
     );
-
     return clearTimers;
   }, [lineIndex, isPlaying, bpm, words, clearTimers]);
 
-  const goToLine = useCallback((idx) => {
-    clearTimers();
-    setLineIndex(((idx % TOTAL) + TOTAL) % TOTAL);
-    setWordIndex(-1);
-  }, [clearTimers]);
+  const goToLine = useCallback(
+    (idx) => {
+      clearTimers();
+      setLineIndex(((idx % TOTAL) + TOTAL) % TOTAL);
+      setWordIndex(-1);
+    },
+    [clearTimers],
+  );
 
   const restart = useCallback(() => {
     clearTimers();
@@ -75,7 +85,7 @@ export default function App() {
     setVisualKey((k) => k + 1);
   }, [clearTimers]);
 
-  // Keyboard shortcuts: space = play/pause, ←/→ = prev/next line, R = restart.
+  // Keyboard: space = play/pause, ←/→ = prev/next line, R = restart.
   useEffect(() => {
     const onKey = (e) => {
       if (e.target.tagName === 'INPUT') return;
@@ -95,9 +105,7 @@ export default function App() {
   }, [lineIndex, goToLine, restart]);
 
   const onBpmBlur = (e) => setBpm(clampBpm(e.target.value));
-  const prevLine = lineIndex > 0 ? SONG.lines[lineIndex - 1] : null;
-  const nextLine = lineIndex < TOTAL - 1 ? SONG.lines[lineIndex + 1] : null;
-  const progress = ((lineIndex + 1) / TOTAL) * 100;
+  const progress = TOTAL > 1 ? lineIndex / (TOTAL - 1) : 0;
 
   return (
     <div className="flex h-[100dvh] w-full items-center justify-center bg-black">
@@ -105,106 +113,96 @@ export default function App() {
         <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-indigo-950 via-slate-950 to-black" />
 
         {/* --- Visualizer --- */}
-        <div className="relative z-10 h-[42%] w-full flex-shrink-0">
+        <div className="relative z-10 h-[36%] w-full flex-shrink-0">
           <ComeOverVisuals
             key={visualKey}
             isPlaying={isPlaying}
             bpm={clampBpm(bpm)}
             pulse={lineIndex * 1000 + wordIndex}
+            progress={progress}
           />
-          {/* fade the canvas into the lyric area */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-slate-950" />
-          {/* title overlay */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-slate-950" />
           <div className="pointer-events-none absolute left-4 top-4 text-left">
             <h1 className="text-lg font-bold tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
               {SONG.title}
             </h1>
-            <p className="text-xs font-medium uppercase tracking-[0.25em] text-amber-200/80">
-              {SONG.artist}
-            </p>
+            <p className="text-xs font-medium uppercase tracking-[0.25em] text-amber-200/80">{SONG.artist}</p>
           </div>
         </div>
 
-        {/* --- Lyrics --- */}
-        <div className="relative z-10 flex flex-grow flex-col items-center justify-center px-5">
-          <div className="h-6 text-sm text-white/35 truncate w-full">{prevLine ? prevLine.o : ''}</div>
-
+        {/* --- Lyrics (karaoke + multilingual subtitles) --- */}
+        <div className="relative z-10 flex min-h-0 flex-grow flex-col px-4 pt-2">
+          {/* Original + romanization, karaoke-highlighted */}
           <div
-            className="my-3 flex min-h-[8.5rem] flex-col items-center justify-center gap-2"
-            style={{ textShadow: '0 4px 22px rgba(0,0,0,0.85)' }}
+            className="flex-shrink-0 pb-2 text-center"
+            style={{ textShadow: '0 4px 18px rgba(0,0,0,0.85)' }}
           >
-            <p className="text-2xl font-bold leading-snug tracking-tight md:text-3xl">
+            <p className="text-xl font-bold leading-snug tracking-tight md:text-2xl">
               {words.map((wd, i) => (
-                <Word key={`o-${i}`} text={wd.o} on={i <= wordIndex} color={SUNG} dim="rgba(255,255,255,0.78)" />
+                <Word key={`o-${i}`} text={wd.o} on={i <= wordIndex} color={SUNG} dim="rgba(255,255,255,0.8)" />
               ))}
             </p>
-
             {line.r && (
-              <p className="text-base font-medium leading-snug md:text-lg">
+              <p className="mt-1 text-sm font-medium leading-snug md:text-base">
                 {words.map((wd, i) => (
                   <Word key={`r-${i}`} text={wd.r} on={i <= wordIndex} color={SUNG_RO} dim="rgba(255,255,255,0.4)" />
                 ))}
               </p>
             )}
-
-            {line.en && <p className="max-w-sm text-sm leading-snug text-white/55">{line.en}</p>}
+            {primaryEn && <p className="mt-1.5 text-sm leading-snug text-white/85">{primaryEn}</p>}
           </div>
 
-          <div className="h-6 text-sm text-white/35 truncate w-full">{nextLine ? nextLine.o : ''}</div>
+          {/* Multilingual subtitle grid */}
+          <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto border-t border-white/10 pt-2">
+            <ul className="space-y-1 text-left">
+              {otherLangs.map((code) => (
+                <li key={code} className="flex items-start gap-2 leading-snug">
+                  <span className="w-16 flex-shrink-0 text-right text-[10px] font-semibold uppercase tracking-wide text-amber-200/60">
+                    {LANG_LABELS[code]}
+                  </span>
+                  <span
+                    dir={RTL_LANGS.includes(code) ? 'rtl' : 'ltr'}
+                    className="flex-1 text-[12px] text-white/65"
+                  >
+                    {line.t[code]}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         {/* --- Controls --- */}
-        <div className="relative z-20 flex-shrink-0 px-5 pb-7 pt-2">
-          {/* progress */}
-          <div className="mx-auto mb-4 flex max-w-xs items-center gap-2">
-            <span className="w-10 text-right text-[11px] font-mono text-white/45">
+        <div className="relative z-20 flex-shrink-0 px-5 pb-6 pt-2">
+          <div className="mx-auto mb-3 flex max-w-xs items-center gap-2">
+            <span className="w-9 text-right text-[11px] font-mono text-white/45">
               {String(lineIndex + 1).padStart(2, '0')}
             </span>
             <div className="h-1 flex-grow overflow-hidden rounded-full bg-white/10">
               <motion.div
                 className="h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-500"
-                animate={{ width: `${progress}%` }}
+                animate={{ width: `${((lineIndex + 1) / TOTAL) * 100}%` }}
                 transition={{ ease: 'easeOut', duration: 0.3 }}
               />
             </div>
-            <span className="w-10 text-left text-[11px] font-mono text-white/45">
-              {String(TOTAL).padStart(2, '0')}
-            </span>
+            <span className="w-9 text-left text-[11px] font-mono text-white/45">{String(TOTAL).padStart(2, '0')}</span>
           </div>
 
           <div className="flex justify-center">
             <div className="flex items-center gap-3 rounded-full border border-white/10 bg-black/45 px-4 py-2.5 shadow-lg backdrop-blur-md">
-              <button
-                onClick={() => goToLine(lineIndex - 1)}
-                className="text-white/70 transition-colors hover:text-white"
-                aria-label="Previous line"
-              >
+              <button onClick={() => goToLine(lineIndex - 1)} className="text-white/70 transition-colors hover:text-white" aria-label="Previous line">
                 <SkipBack size={22} />
               </button>
-              <button
-                onClick={() => setIsPlaying((p) => !p)}
-                className="text-white transition-transform hover:scale-110"
-                aria-label={isPlaying ? 'Pause' : 'Play'}
-              >
+              <button onClick={() => setIsPlaying((p) => !p)} className="text-white transition-transform hover:scale-110" aria-label={isPlaying ? 'Pause' : 'Play'}>
                 {isPlaying ? <Pause size={30} /> : <Play size={30} />}
               </button>
-              <button
-                onClick={() => goToLine(lineIndex + 1)}
-                className="text-white/70 transition-colors hover:text-white"
-                aria-label="Next line"
-              >
+              <button onClick={() => goToLine(lineIndex + 1)} className="text-white/70 transition-colors hover:text-white" aria-label="Next line">
                 <SkipForward size={22} />
               </button>
-              <button
-                onClick={restart}
-                className="text-white/70 transition-colors hover:text-white"
-                aria-label="Restart"
-              >
+              <button onClick={restart} className="text-white/70 transition-colors hover:text-white" aria-label="Restart">
                 <RotateCcw size={20} />
               </button>
-
               <div className="mx-1 h-7 w-px bg-white/15" />
-
               <div className="flex items-center gap-1.5">
                 <Music4 className="text-white/55" size={20} />
                 <input
