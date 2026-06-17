@@ -3,10 +3,12 @@ import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 //
-// `base` must match the GitHub Pages project sub-path so built asset URLs
-// resolve under https://alibowbow.github.io/lyricpl/. The dev server stays at
-// root ('/') so `npm run dev` is unaffected.
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/lyricpl/' : '/',
+// `base` matches the GitHub Pages project sub-path so the built asset URLs
+// resolve under https://alibowbow.github.io/lyricpl/. It is set for every
+// command (build, dev and preview) so `npm run preview` serves the app at the
+// same /lyricpl/ path the production build expects — otherwise preview would
+// look for assets at the wrong path and render a blank page.
+export default defineConfig({
+  base: '/lyricpl/',
   plugins: [react()],
-}));
+});
