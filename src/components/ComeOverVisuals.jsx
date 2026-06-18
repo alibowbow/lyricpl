@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 
-// --- Pixel-art multi-scene visualizer for "Come Over" ----------------------
-// Cuts between 12 distinct scenes (day and night) as the song plays, with a
+// --- Animated multi-scene visualizer for "Come Over" -----------------------
+// A chibi idol character moves through 12 distinct scenes as the song plays,
 // fade-through-dark transition. Scenes are intentionally brighter than a plain
 // dark night so the art reads clearly.
 //   street citywalk day  — getting to you (incl. daytime)
@@ -10,21 +10,16 @@ import React, { useRef, useEffect, useCallback } from 'react';
 //   neon storm            — the rap: neon rain, then the dark storm
 //   boat sunset dawn       — the bridge and the hopeful ending
 
-const BODY = [
-  [0, 0, 'k', 'k', 'k', 0, 0],
-  [0, 'k', 'k', 'k', 'k', 'k', 0],
-  [0, 'k', 'k', 'k', 'k', 'r', 0],
-  [0, 'k', 'k', 'k', 'k', 'r', 0],
-  [0, 0, 'k', 'k', 'k', 0, 0],
-  ['k', 'k', 'k', 'k', 'k', 'r', 0],
-  ['k', 'k', 'k', 'k', 'k', 'r', 0],
-  ['k', 'k', 'k', 'k', 'k', 'r', 0],
-];
-const BODY_COLS = 7;
-const BODY_ROWS = BODY.length;
 const SIL = '#0a0b16';
 const RIM = '#33405f';
 const TAU = Math.PI * 2;
+
+// "Come Over" character — a chibi (3-head) idol: black hair, charcoal coat, cream scarf.
+const PAL = {
+  hair: '#16161e', hairHi: '#3a3a4c', skin: '#f4ceaa',
+  coat: '#2a2d38', coatShade: '#191b24', inner: '#33333f',
+  pants: '#181820', scarf: '#e8e0d0',
+};
 
 export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) {
   const canvasRef = useRef(null);
@@ -66,7 +61,7 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
 
     const setup = (w, h) => {
       const px = Math.max(3, Math.floor(h * 0.018));
-      A.layout = { w, h, groundY: Math.floor(h * 0.74), px, figW: px * BODY_COLS };
+      A.layout = { w, h, groundY: Math.floor(h * 0.74), px, figW: px * 6 };
       A.wanderer.x = w * 0.2;
       if (A.sceneCur == null) A.sceneCur = sceneRef.current;
       A.stars = Array.from({ length: Math.floor(w / 6) }, () => ({
@@ -89,45 +84,163 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
       A.splashes = []; A.ripples = []; A.smoke = []; A.motes = [];
     };
 
-    // --- shared helpers ---
-    const sprite = (s, x, y, p) => {
-      for (let r = 0; r < s.length; r++)
-        for (let c = 0; c < s[r].length; c++) {
-          if (!s[r][c]) continue;
-          ctx.fillStyle = s[r][c] === 'r' ? RIM : SIL;
-          ctx.fillRect(Math.floor(x + c * p), Math.floor(y + r * p), Math.ceil(p), Math.ceil(p));
-        }
+    // --- chibi idol character (shared head, standing/walking, knock, seated) ---
+    const idolHead = (cx, faceCy, hu) => {
+      const topY = faceCy - 0.54 * hu, chinY = faceCy + 0.46 * hu;
+      const headRx = 0.46 * hu, headRy = 0.52 * hu;
+      // face
+      ctx.fillStyle = PAL.skin;
+      ctx.beginPath();
+      ctx.moveTo(cx - headRx, faceCy);
+      ctx.quadraticCurveTo(cx - headRx, faceCy + 0.42 * hu, cx, chinY);
+      ctx.quadraticCurveTo(cx + headRx, faceCy + 0.42 * hu, cx + headRx, faceCy);
+      ctx.quadraticCurveTo(cx + headRx, faceCy - headRy, cx, faceCy - headRy);
+      ctx.quadraticCurveTo(cx - headRx, faceCy - headRy, cx - headRx, faceCy);
+      ctx.closePath();
+      ctx.fill();
+      // ears
+      ctx.beginPath(); ctx.ellipse(cx - headRx + 0.01 * hu, faceCy + 0.06 * hu, 0.06 * hu, 0.1 * hu, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + headRx - 0.01 * hu, faceCy + 0.06 * hu, 0.06 * hu, 0.1 * hu, 0, 0, TAU); ctx.fill();
+      // subtle blush
+      ctx.fillStyle = 'rgba(220,130,120,0.16)';
+      ctx.beginPath(); ctx.ellipse(cx - 0.27 * hu, faceCy + 0.23 * hu, 0.075 * hu, 0.04 * hu, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + 0.27 * hu, faceCy + 0.23 * hu, 0.075 * hu, 0.04 * hu, 0, 0, TAU); ctx.fill();
+      // simple eyes + catchlight
+      const eyeY = faceCy + 0.14 * hu, eyeDx = 0.18 * hu, ew = 0.105 * hu, eh = 0.12 * hu;
+      [-1, 1].forEach((s) => {
+        const ex = cx + s * eyeDx;
+        ctx.fillStyle = '#2a2230';
+        ctx.beginPath(); ctx.ellipse(ex, eyeY, ew, eh, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.beginPath(); ctx.arc(ex - 0.03 * hu, eyeY - 0.04 * hu, 0.028 * hu, 0, TAU); ctx.fill();
+      });
+      // brows
+      ctx.strokeStyle = PAL.hair; ctx.lineWidth = 0.04 * hu; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cx - eyeDx - 0.1 * hu, eyeY - 0.2 * hu); ctx.quadraticCurveTo(cx - eyeDx, eyeY - 0.23 * hu, cx - eyeDx + 0.09 * hu, eyeY - 0.205 * hu); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + eyeDx - 0.09 * hu, eyeY - 0.205 * hu); ctx.quadraticCurveTo(cx + eyeDx, eyeY - 0.23 * hu, cx + eyeDx + 0.1 * hu, eyeY - 0.2 * hu); ctx.stroke();
+      // nose hint + mouth
+      ctx.strokeStyle = 'rgba(150,110,90,0.45)'; ctx.lineWidth = 0.022 * hu;
+      ctx.beginPath(); ctx.moveTo(cx - 0.01 * hu, faceCy + 0.22 * hu); ctx.lineTo(cx + 0.02 * hu, faceCy + 0.27 * hu); ctx.stroke();
+      ctx.strokeStyle = '#9a5b4a'; ctx.lineWidth = 0.03 * hu;
+      ctx.beginPath(); ctx.arc(cx, faceCy + 0.34 * hu, 0.07 * hu, 0.12 * Math.PI, 0.88 * Math.PI); ctx.stroke();
+      // hair with side-swept fringe
+      ctx.fillStyle = PAL.hair;
+      ctx.beginPath();
+      ctx.moveTo(cx - headRx - 0.02 * hu, faceCy + 0.05 * hu);
+      ctx.quadraticCurveTo(cx - headRx - 0.06 * hu, topY - 0.02 * hu, cx, topY - 0.06 * hu);
+      ctx.quadraticCurveTo(cx + headRx + 0.04 * hu, topY - 0.02 * hu, cx + headRx + 0.03 * hu, faceCy + 0.02 * hu);
+      ctx.quadraticCurveTo(cx + headRx - 0.02 * hu, faceCy - 0.06 * hu, cx + headRx - 0.06 * hu, faceCy - 0.04 * hu);
+      ctx.quadraticCurveTo(cx + 0.24 * hu, faceCy - 0.18 * hu, cx + 0.05 * hu, faceCy - 0.08 * hu);
+      ctx.quadraticCurveTo(cx - 0.14 * hu, faceCy - 0.02 * hu, cx - 0.04 * hu, faceCy - 0.16 * hu);
+      ctx.quadraticCurveTo(cx - 0.26 * hu, faceCy - 0.04 * hu, cx - 0.34 * hu, faceCy - 0.2 * hu);
+      ctx.quadraticCurveTo(cx - headRx - 0.04 * hu, faceCy - 0.12 * hu, cx - headRx - 0.02 * hu, faceCy + 0.05 * hu);
+      ctx.closePath();
+      ctx.fill();
+      ctx.save(); ctx.globalAlpha = 0.5; ctx.fillStyle = PAL.hairHi;
+      ctx.beginPath(); ctx.ellipse(cx + 0.13 * hu, topY + 0.17 * hu, 0.12 * hu, 0.045 * hu, -0.45, 0, TAU); ctx.fill();
+      ctx.restore();
     };
 
-    const hooded = (cx, footY, p, { walk = null, knock = 0 } = {}) => {
-      const figW = p * BODY_COLS;
-      const bodyTop = footY - (BODY_ROWS + 3) * p;
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.beginPath();
-      ctx.ellipse(cx, footY + p, figW * 0.5, p * 1.1, 0, 0, TAU);
-      ctx.fill();
-      const sw = walk != null ? Math.sin(walk) * p * 1.2 : 0;
-      ctx.fillStyle = SIL;
-      ctx.fillRect(Math.floor(cx - p * 1.7 + sw), footY - p * 3, Math.ceil(p * 1.4), p * 3);
-      ctx.fillRect(Math.floor(cx + p * 0.3 - sw), footY - p * 3, Math.ceil(p * 1.4), p * 3);
-      sprite(BODY, cx - figW / 2, bodyTop, p);
+    const idol = (cx, footY, p, { walk = null, knock = 0 } = {}) => {
+      const H = p * 11, hu = H / 3, topY = footY - H;
+      const faceCy = topY + 0.54 * hu, chinY = topY + 1.0 * hu, shoulderY = topY + 1.12 * hu;
+      const waistY = topY + 1.62 * hu, hipY = topY + 1.95 * hu, coatHemY = topY + 2.15 * hu;
+      const shHalf = 0.5 * hu, waistHalf = 0.44 * hu, hemHalf = 0.54 * hu, legHalf = 0.15 * hu;
+      const sw = walk != null ? Math.sin(walk) * 0.1 * hu : 0;
+      // shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath();
+      ctx.ellipse(cx, footY + 1, hemHalf * 1.25, 0.12 * hu, 0, 0, TAU); ctx.fill();
+      // legs + shoes
+      ctx.strokeStyle = PAL.pants; ctx.lineWidth = legHalf * 2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cx - 0.17 * hu, hipY); ctx.lineTo(cx - 0.19 * hu + sw, footY - 0.13 * hu); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + 0.17 * hu, hipY); ctx.lineTo(cx + 0.19 * hu - sw, footY - 0.13 * hu); ctx.stroke();
+      ctx.fillStyle = '#111118';
+      ctx.beginPath(); ctx.ellipse(cx - 0.22 * hu + sw, footY - 0.06 * hu, 0.2 * hu, 0.1 * hu, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + 0.22 * hu - sw, footY - 0.06 * hu, 0.2 * hu, 0.1 * hu, 0, 0, TAU); ctx.fill();
+      // coat
+      const cg = ctx.createLinearGradient(cx - shHalf, 0, cx + shHalf, 0);
+      cg.addColorStop(0, PAL.coatShade); cg.addColorStop(0.45, PAL.coat); cg.addColorStop(1, PAL.coatShade);
+      ctx.fillStyle = cg; ctx.beginPath();
+      ctx.moveTo(cx - shHalf, shoulderY);
+      ctx.quadraticCurveTo(cx - waistHalf * 0.95, waistY, cx - hemHalf, coatHemY);
+      ctx.quadraticCurveTo(cx, coatHemY + 0.16 * hu, cx + hemHalf, coatHemY);
+      ctx.quadraticCurveTo(cx + waistHalf * 0.95, waistY, cx + shHalf, shoulderY);
+      ctx.quadraticCurveTo(cx, shoulderY - 0.3 * hu, cx - shHalf, shoulderY);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = PAL.inner; ctx.beginPath();
+      ctx.moveTo(cx - 0.13 * hu, shoulderY + 0.05 * hu); ctx.lineTo(cx + 0.13 * hu, shoulderY + 0.05 * hu);
+      ctx.lineTo(cx + 0.1 * hu, coatHemY - 0.08 * hu); ctx.lineTo(cx - 0.1 * hu, coatHemY - 0.08 * hu); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = PAL.coatShade; ctx.fillRect(cx - waistHalf * 0.9, waistY - 0.05 * hu, waistHalf * 1.8, 0.11 * hu);
+      // arms (left always in pocket; right knocks when knock>0)
+      ctx.strokeStyle = PAL.coat; ctx.lineWidth = 0.26 * hu; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cx - shHalf * 0.85, shoulderY + 0.12 * hu); ctx.quadraticCurveTo(cx - hemHalf * 0.95, waistY, cx - waistHalf * 0.6, hipY - 0.05 * hu); ctx.stroke();
       if (knock > 0.04) {
-        const reach = knock * p * 2.4;
-        const sx = cx + figW * 0.32, sy = bodyTop + p * 2.2;
-        ctx.fillStyle = SIL;
-        ctx.fillRect(Math.floor(sx), Math.floor(sy), Math.ceil(p + reach), Math.ceil(p));
-        ctx.fillStyle = RIM;
-        ctx.fillRect(Math.floor(sx + p + reach), Math.floor(sy - p * 0.3), Math.ceil(p * 1.2), Math.ceil(p * 1.4));
+        const hX = cx + (0.62 + 0.5 * knock) * hu, hY = shoulderY - (0.05 + 0.28 * knock) * hu;
+        ctx.beginPath(); ctx.moveTo(cx + shHalf * 0.8, shoulderY + 0.12 * hu); ctx.quadraticCurveTo(cx + 0.66 * hu, shoulderY - 0.05 * hu, hX, hY); ctx.stroke();
+        ctx.fillStyle = PAL.skin; ctx.beginPath(); ctx.arc(hX, hY, 0.1 * hu, 0, TAU); ctx.fill();
+      } else {
+        ctx.beginPath(); ctx.moveTo(cx + shHalf * 0.85, shoulderY + 0.12 * hu); ctx.quadraticCurveTo(cx + hemHalf * 0.95, waistY, cx + waistHalf * 0.6, hipY - 0.05 * hu); ctx.stroke();
       }
+      // scarf
+      ctx.fillStyle = PAL.scarf; ctx.beginPath();
+      ctx.moveTo(cx - 0.34 * hu, chinY - 0.05 * hu); ctx.lineTo(cx + 0.34 * hu, chinY - 0.05 * hu);
+      ctx.lineTo(cx + 0.22 * hu, shoulderY + 0.2 * hu); ctx.lineTo(cx - 0.22 * hu, shoulderY + 0.2 * hu); ctx.closePath(); ctx.fill();
+      ctx.fillRect(cx + 0.02 * hu, shoulderY + 0.05 * hu, 0.16 * hu, 0.5 * hu);
+      // neck + head
+      ctx.fillStyle = PAL.skin; ctx.fillRect(cx - 0.12 * hu, chinY - 0.12 * hu, 0.24 * hu, 0.22 * hu);
+      idolHead(cx, faceCy, hu);
+      // cool rim light on the right contour
+      ctx.strokeStyle = 'rgba(150,180,230,0.5)'; ctx.lineWidth = 0.045 * hu; ctx.beginPath();
+      ctx.moveTo(cx + shHalf * 0.96, shoulderY);
+      ctx.quadraticCurveTo(cx + hemHalf * 0.98, waistY, cx + hemHalf * 0.94, coatHemY);
+      ctx.stroke();
     };
 
-    const seated = (cx, footY, p) => {
-      ctx.fillStyle = SIL;
-      ctx.beginPath();
-      ctx.arc(cx, footY - p * 5, p * 2.1, 0, TAU);
-      ctx.fill();
-      ctx.fillRect(cx - p * 2.4, footY - p * 4, p * 4.8, p * 3);
-      ctx.fillRect(cx - p * 0.5, footY - p * 1.2, p * 3, p * 1.2); // legs out
+    const idolSit = (cx, hipY, p, { dangle = false, noLegs = false } = {}) => {
+      const hu = p * (11 / 3);
+      const shoulderY = hipY - 1.05 * hu;
+      const faceCy = shoulderY - 0.62 * hu, chinY = faceCy + 0.46 * hu;
+      const shHalf = 0.5 * hu, hipHalf = 0.52 * hu, legHalf = 0.15 * hu;
+      if (!noLegs) {
+        ctx.fillStyle = 'rgba(0,0,0,0.32)'; ctx.beginPath();
+        ctx.ellipse(cx, hipY + (dangle ? 1.5 * hu : 0.62 * hu), 0.75 * hu, 0.12 * hu, 0, 0, TAU); ctx.fill();
+        ctx.strokeStyle = PAL.pants; ctx.lineWidth = legHalf * 2; ctx.lineCap = 'round';
+        if (dangle) {
+          ctx.beginPath(); ctx.moveTo(cx - 0.2 * hu, hipY); ctx.lineTo(cx - 0.22 * hu, hipY + 1.35 * hu); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(cx + 0.2 * hu, hipY); ctx.lineTo(cx + 0.22 * hu, hipY + 1.35 * hu); ctx.stroke();
+          ctx.fillStyle = '#111118';
+          ctx.beginPath(); ctx.ellipse(cx - 0.22 * hu, hipY + 1.42 * hu, 0.16 * hu, 0.09 * hu, 0, 0, TAU); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(cx + 0.22 * hu, hipY + 1.42 * hu, 0.16 * hu, 0.09 * hu, 0, 0, TAU); ctx.fill();
+        } else {
+          ctx.beginPath(); ctx.moveTo(cx - 0.18 * hu, hipY - 0.05 * hu); ctx.quadraticCurveTo(cx - 0.62 * hu, hipY + 0.2 * hu, cx - 0.64 * hu, hipY + 0.62 * hu); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(cx + 0.18 * hu, hipY - 0.05 * hu); ctx.quadraticCurveTo(cx + 0.62 * hu, hipY + 0.2 * hu, cx + 0.64 * hu, hipY + 0.62 * hu); ctx.stroke();
+          ctx.fillStyle = '#111118';
+          ctx.beginPath(); ctx.ellipse(cx - 0.66 * hu, hipY + 0.64 * hu, 0.18 * hu, 0.09 * hu, 0, 0, TAU); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(cx + 0.66 * hu, hipY + 0.64 * hu, 0.18 * hu, 0.09 * hu, 0, 0, TAU); ctx.fill();
+        }
+      }
+      // seated torso
+      const cg = ctx.createLinearGradient(cx - shHalf, 0, cx + shHalf, 0);
+      cg.addColorStop(0, PAL.coatShade); cg.addColorStop(0.45, PAL.coat); cg.addColorStop(1, PAL.coatShade);
+      ctx.fillStyle = cg; ctx.beginPath();
+      ctx.moveTo(cx - shHalf, shoulderY);
+      ctx.quadraticCurveTo(cx - hipHalf, (shoulderY + hipY) / 2, cx - hipHalf, hipY + 0.08 * hu);
+      ctx.quadraticCurveTo(cx, hipY + 0.28 * hu, cx + hipHalf, hipY + 0.08 * hu);
+      ctx.quadraticCurveTo(cx + hipHalf, (shoulderY + hipY) / 2, cx + shHalf, shoulderY);
+      ctx.quadraticCurveTo(cx, shoulderY - 0.3 * hu, cx - shHalf, shoulderY);
+      ctx.closePath(); ctx.fill();
+      // arms resting in lap
+      ctx.strokeStyle = PAL.coat; ctx.lineWidth = 0.24 * hu; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cx - shHalf * 0.8, shoulderY + 0.15 * hu); ctx.quadraticCurveTo(cx - hipHalf * 0.95, hipY - 0.25 * hu, cx - 0.08 * hu, hipY - 0.05 * hu); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + shHalf * 0.8, shoulderY + 0.15 * hu); ctx.quadraticCurveTo(cx + hipHalf * 0.95, hipY - 0.25 * hu, cx + 0.08 * hu, hipY - 0.05 * hu); ctx.stroke();
+      // scarf
+      ctx.fillStyle = PAL.scarf; ctx.beginPath();
+      ctx.moveTo(cx - 0.34 * hu, chinY - 0.05 * hu); ctx.lineTo(cx + 0.34 * hu, chinY - 0.05 * hu);
+      ctx.lineTo(cx + 0.22 * hu, shoulderY + 0.2 * hu); ctx.lineTo(cx - 0.22 * hu, shoulderY + 0.2 * hu); ctx.closePath(); ctx.fill();
+      ctx.fillRect(cx + 0.02 * hu, shoulderY + 0.05 * hu, 0.16 * hu, 0.42 * hu);
+      // neck + head
+      ctx.fillStyle = PAL.skin; ctx.fillRect(cx - 0.12 * hu, chinY - 0.12 * hu, 0.24 * hu, 0.22 * hu);
+      idolHead(cx, faceCy, hu);
     };
 
     const stars = (alpha) => {
@@ -255,7 +368,7 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
         ctx.fillRect(x - px * 4, groundY, px * 8, h - groundY);
       });
       if (playing) { A.wanderer.x += Math.max(1, w * 0.0028); A.wanderer.walk += 0.22; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
-      hooded(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
+      idol(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
       rain(0.6, playing);
     };
 
@@ -282,7 +395,7 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
       ctx.fillStyle = '#7a4a2a';
       ctx.fillRect(hx + hw * 0.56, groundY - hh * 0.48, hw * 0.24, hh * 0.48);
       if (playing) { A.wanderer.x += Math.max(1, w * 0.0026); A.wanderer.walk += 0.22; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
-      hooded(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
+      idol(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
     };
 
     const sceneCitywalk = (playing) => {
@@ -304,7 +417,7 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
       ctx.fillStyle = 'rgba(255,255,255,0.55)'; // crosswalk
       for (let x = w * 0.1; x < w * 0.9; x += px * 5) ctx.fillRect(x, groundY + px * 2, px * 3, px);
       if (playing) { A.wanderer.x += Math.max(1, w * 0.003); A.wanderer.walk += 0.24; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
-      hooded(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
+      idol(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
     };
 
     const sceneRoom = (playing) => {
@@ -341,17 +454,8 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
       ctx.fillRect(wx, wy + wh / 2 - px / 2, ww, px);
       ctx.fillStyle = '#0c1124';
       ctx.fillRect(0, groundY, w, h - groundY);
-      const fx = w * 0.2;
-      ctx.fillStyle = SIL;
-      ctx.beginPath();
-      ctx.arc(fx, groundY - px * 7, px * 2.4, 0, TAU);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(fx - px * 4, groundY);
-      ctx.quadraticCurveTo(fx - px * 4.5, groundY - px * 6, fx, groundY - px * 6);
-      ctx.quadraticCurveTo(fx + px * 4.5, groundY - px * 6, fx + px * 4, groundY);
-      ctx.closePath();
-      ctx.fill();
+      const fx = w * 0.22;
+      idolSit(fx, groundY - px * 0.5, px, {});
       const pg = 0.6 + 0.4 * A.beat;
       const phx = fx + px * 3, phy = groundY - px * 5;
       const glow = ctx.createRadialGradient(phx, phy, 0, phx, phy, px * 7);
@@ -391,7 +495,7 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
       ctx.fillStyle = '#243150';
       ctx.fillRect(0, groundY - px * 2, w, h - groundY + px * 2);
       // seated figure
-      seated(w * 0.32, groundY, px);
+      idolSit(w * 0.32, groundY - px * 2, px, {});
     };
 
     const sceneRooftop = (playing) => {
@@ -411,14 +515,7 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
       ctx.fillStyle = '#111830';
       ctx.fillRect(0, groundY - px, w, px);
       // figure sitting on the ledge, legs dangling
-      const fx = w * 0.3;
-      ctx.fillStyle = SIL;
-      ctx.beginPath();
-      ctx.arc(fx, groundY - px * 5, px * 2.1, 0, TAU);
-      ctx.fill();
-      ctx.fillRect(fx - px * 2.2, groundY - px * 4, px * 4.4, px * 3.2);
-      ctx.fillRect(fx - px * 1.6, groundY, px * 1.3, px * 3); // dangling legs
-      ctx.fillRect(fx + px * 0.4, groundY, px * 1.3, px * 3);
+      idolSit(w * 0.3, groundY, px, { dangle: true });
     };
 
     const sceneHouse = (playing) => {
@@ -468,7 +565,7 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
         ctx.stroke();
       });
       A.wanderer.knockArm *= 0.86;
-      hooded(dx - px * 3, groundY, px * 1.1, { knock: A.wanderer.knockArm });
+      idol(dx - px * 3, groundY, px * 1.1, { knock: A.wanderer.knockArm });
       rain(0.55, playing);
     };
 
@@ -499,7 +596,7 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
         ctx.fillRect(b.x, groundY, b.w, h - groundY);
       });
       if (playing) { A.wanderer.x += Math.max(1, w * 0.0026); A.wanderer.walk += 0.22; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
-      hooded(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
+      idol(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
       rain(0.75, playing, 'rgba(200,180,240,');
     };
 
@@ -529,13 +626,7 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
       pool.addColorStop(1, 'rgba(180,30,40,0)');
       ctx.fillStyle = pool;
       ctx.fillRect(cx - px * 14, groundY - px * 3, px * 28, px * 9);
-      ctx.fillStyle = SIL;
-      ctx.beginPath();
-      ctx.ellipse(cx, groundY - px * 2.4, px * 4.6, px * 2.8, 0, 0, TAU);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(cx + px * 2.6, groundY - px * 4, px * 2.1, 0, TAU);
-      ctx.fill();
+      idolSit(cx, groundY - px * 1.5, px, {});
       if (playing && A.t % 9 === 0) A.smoke.push({ x: cx + (Math.random() - 0.5) * px * 8, y: groundY - px * 3, r: px * 2, life: 1 });
       A.smoke = A.smoke.filter((s) => s.life > 0);
       A.smoke.forEach((s) => {
@@ -583,10 +674,7 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
       ctx.beginPath();
       ctx.moveTo(-px * 8, 0); ctx.lineTo(px * 8, 0); ctx.lineTo(px * 5, px * 3); ctx.lineTo(-px * 5, px * 3); ctx.closePath();
       ctx.fill();
-      ctx.beginPath();
-      ctx.arc(0, -px * 4, px * 1.8, 0, TAU);
-      ctx.fill();
-      ctx.fillRect(-px * 2.2, -px * 4, px * 4.4, px * 4);
+      idolSit(0, -px * 0.5, px, { noLegs: true });
       const stroke = Math.sin(A.t * 0.06) * 0.5;
       ctx.strokeStyle = RIM;
       ctx.lineWidth = Math.max(2, px * 0.7);
@@ -623,7 +711,7 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
       // pier + figure silhouette
       ctx.fillStyle = '#241018';
       ctx.fillRect(0, groundY, w, h - groundY);
-      hooded(w * 0.3, groundY, px, {});
+      idol(w * 0.3, groundY, px, {});
     };
 
     const sceneDawn = (playing) => {
@@ -652,7 +740,7 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
       ctx.fillRect(dx - dw * 0.18, dy, dw * 0.18, dh);
       ctx.fillStyle = '#2a2014';
       ctx.fillRect(0, groundY, w, h - groundY);
-      hooded(dx + dw / 2, groundY, px, {});
+      idol(dx + dw / 2, groundY, px, {});
       if (playing && A.t % 14 === 0) A.motes.push({ x: dx + Math.random() * dw, y: groundY, life: 1 });
       A.motes = A.motes.filter((m) => m.life > 0);
       A.motes.forEach((m) => {
