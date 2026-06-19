@@ -1,110 +1,122 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, RotateCcw, SkipBack, SkipForward, Music4 } from 'lucide-react';
 import ComeOverVisuals from './components/ComeOverVisuals.jsx';
-import { SONG, buildWords, buildTiming, TRANSLATION_LANGS, RTL_LANGS } from './data/lyrics.js';
+import { SONG, TRANSLATION_LANGS, RTL_LANGS } from './data/lyrics.js';
+import { attachStoryboard } from './data/storyboard.js';
+import { buildAllSegments } from './lib/lyricSegments.js';
+import { useLyricTimeline } from './hooks/useLyricTimeline.js';
+import { useFitSingleLine } from './hooks/useFitSingleLine.js';
 
 const SUNG = '#fcd34d'; // warm amber for the original line
 const SUNG_RO = '#67e8f9'; // cool cyan for the romanization
 const TOTAL = SONG.lines.length;
-// Keep the on-screen subtitle list short so it never pushes the controls off
-// the bottom of the screen. EN shows as a primary line; these show below it.
+// Extra subtitle languages (beyond original/romanization/EN). Kept short so the
+// list never pushes the controls off-screen; nothing is deleted from the data.
 const GRID_LANGS = ['JA', 'ZH', 'ES', 'FR', 'RU', 'AR'].filter((c) => TRANSLATION_LANGS.includes(c));
 
 const clampBpm = (v) => Math.min(200, Math.max(40, parseInt(v, 10) || SONG.defaultBpm));
 
-// Which visualizer scene each lyric line belongs to — 12 distinct scenes
-// (day and night) so the song cuts through many different backdrops.
-function sceneForLine(i) {
-  if (i <= 3) return 'street'; // chorus 1 — rainy night, heading to you
-  if (i <= 7) return 'room'; // verse 1 — alone, phone glowing
-  if (i <= 11) return 'day'; // daytime — brighter days / time has passed
-  if (i <= 15) return 'citywalk'; // daytime city
-  if (i <= 19) return 'house'; // "would you open up if I knocked on your door"
-  if (i <= 23) return 'neon'; // "knockin' on your door" — neon rain
-  if (i <= 27) return 'storm'; // rap — "smoke in black night, we so dead"
-  if (i <= 31) return 'rooftop'; // night rooftop over the city
-  if (i <= 35) return 'train'; // night train
-  if (i <= 39) return 'boat'; // bridge — rowing, "난 노 저어"
-  if (i <= 43) return 'sunset'; // warm resolve
-  return 'dawn'; // "it's not over" — the door opens
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!mq) return undefined;
+    const onChange = () => setReduced(mq.matches);
+    mq.addEventListener?.('change', onChange);
+    return () => mq.removeEventListener?.('change', onChange);
+  }, []);
+  return reduced;
 }
 
 // A karaoke word that warms up once it has been "sung".
-const Word = ({ text, on, color, dim }) => (
+const Word = ({ text, on, color, dim, reduced }) => (
   <motion.span
-    className="relative inline-block"
+    className="lyric-motion inline-block"
     initial={false}
-    animate={{ color: on ? color : dim, opacity: on ? 1 : 0.85 }}
-    transition={{ duration: 0.18, ease: 'easeOut' }}
+    animate={{
+      color: on ? color : dim,
+      opacity: on ? 1 : 0.82,
+      textShadow: on && !reduced ? `0 0 14px ${color}66` : '0 0 0 rgba(0,0,0,0)',
+    }}
+    transition={{ duration: reduced ? 0.001 : 0.18, ease: 'easeOut' }}
   >
-    {text}&nbsp;
+    {text}
   </motion.span>
 );
 
+// A plain, auto-fitted single line (translations + EN).
+function FitLine({ text, dir, className, style, minPx, maxPx }) {
+  const ref = useFitSingleLine(text, { minPx, maxPx });
+  return (
+    <div ref={ref} dir={dir} className={`lyric-single-line ${className}`} style={style}>
+      {text}
+    </div>
+  );
+}
+
+// A karaoke row (word spans) that also auto-fits to a single line.
+function KaraokeLine({ words, upTo, color, dim, reduced, fitKey, className, style, minPx, maxPx, pick }) {
+  const ref = useFitSingleLine(fitKey, { minPx, maxPx });
+  return (
+    <p ref={ref} className={`lyric-single-line ${className}`} style={style}>
+      {words.map((w, i) => (
+        <React.Fragment key={i}>
+          {i > 0 ? ' ' : null}
+          <Word text={pick(w)} on={i <= upTo} color={color} dim={dim} reduced={reduced} />
+        </React.Fragment>
+      ))}
+    </p>
+  );
+}
+
 export default function App() {
-  const [lineIndex, setLineIndex] = useState(0);
-  const [wordIndex, setWordIndex] = useState(-1);
-  const [isPlaying, setIsPlaying] = useState(true);
   const [bpm, setBpm] = useState(SONG.defaultBpm);
   const [visualKey, setVisualKey] = useState(0);
+  const reduced = usePrefersReducedMotion();
 
-  const timers = useRef([]);
-  const clearTimers = useCallback(() => {
-    timers.current.forEach(clearTimeout);
-    timers.current = [];
-  }, []);
+  const lines = useMemo(() => attachStoryboard(SONG.lines), []);
+  const { segments, lineToSegments } = useMemo(() => buildAllSegments(lines), [lines]);
 
-  const line = SONG.lines[lineIndex];
-  const words = useMemo(() => buildWords(line), [line]);
+  const {
+    segment,
+    lineIndex,
+    wordIndex,
+    sourceWordIndex,
+    segmentProgress,
+    songProgress,
+    isPlaying,
+    setIsPlaying,
+    seekToLine,
+    nextLine,
+    previousLine,
+    restart,
+  } = useLyricTimeline({ segments, lineToSegments, bpm, initialPlaying: true });
 
-  // Translations to show: the EN "primary" row, then the other-language grid.
-  // Any translation identical to the original line is hidden (e.g. EN for
-  // English-sung lines), avoiding duplicate text.
-  const primaryEn = line.t.EN && line.t.EN !== line.o ? line.t.EN : null;
-  const otherLangs = useMemo(
-    () => GRID_LANGS.filter((c) => line.t[c] && line.t[c] !== line.o),
-    [line],
-  );
+  // A semantic event for the canvas: word-level cue → line cue (on word 0) →
+  // generic "beat". The id changes per segment/word so repeats still register.
+  const visualEvent = useMemo(() => {
+    if (!segment) return null;
+    const cue =
+      segment.visual.wordCues?.[sourceWordIndex] ??
+      (wordIndex === 0 ? segment.visual.cue : 'beat');
+    return {
+      id: `${segment.id}:${wordIndex}:${cue}`,
+      type: cue,
+      intensity: segment.visual.intensity ?? 0.6,
+      wordIndex,
+      sourceWordIndex,
+    };
+  }, [segment, wordIndex, sourceWordIndex]);
 
-  // Beat-driven karaoke engine: highlight each word, then advance the line.
-  useEffect(() => {
-    clearTimers();
-    if (!isPlaying) return;
-    const beatMs = 60000 / clampBpm(bpm);
-    const timing = buildTiming(words.length);
-    let delay = 0;
-    timing.forEach((beats, i) => {
-      timers.current.push(setTimeout(() => setWordIndex(i), delay));
-      delay += beats * beatMs;
-    });
-    timers.current.push(
-      setTimeout(() => {
-        setLineIndex((prev) => (prev + 1) % TOTAL);
-        setWordIndex(-1);
-      }, delay),
-    );
-    return clearTimers;
-  }, [lineIndex, isPlaying, bpm, words, clearTimers]);
-
-  const goToLine = useCallback(
-    (idx) => {
-      clearTimers();
-      setLineIndex(((idx % TOTAL) + TOTAL) % TOTAL);
-      setWordIndex(-1);
-    },
-    [clearTimers],
-  );
-
-  const restart = useCallback(() => {
-    clearTimers();
-    setLineIndex(0);
-    setWordIndex(-1);
-    setIsPlaying(true);
+  const fullRestart = useCallback(() => {
+    restart();
     setVisualKey((k) => k + 1);
-  }, [clearTimers]);
+  }, [restart]);
 
-  // Keyboard: space = play/pause, ←/→ = prev/next line, R = restart.
+  // Keyboard: space = play/pause, ←/→ = prev/next LINE, R = restart.
   useEffect(() => {
     const onKey = (e) => {
       if (e.target.tagName === 'INPUT') return;
@@ -112,31 +124,39 @@ export default function App() {
         e.preventDefault();
         setIsPlaying((p) => !p);
       } else if (e.code === 'ArrowRight') {
-        goToLine(lineIndex + 1);
+        nextLine();
       } else if (e.code === 'ArrowLeft') {
-        goToLine(lineIndex - 1);
+        previousLine();
       } else if (e.code === 'KeyR') {
-        restart();
+        fullRestart();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [lineIndex, goToLine, restart]);
+  }, [setIsPlaying, nextLine, previousLine, fullRestart]);
 
   const onBpmBlur = (e) => setBpm(clampBpm(e.target.value));
 
+  const otherLangs = segment
+    ? GRID_LANGS.filter((c) => segment.t[c] && segment.t[c] !== segment.o)
+    : [];
+  const primaryEn = segment && segment.t.EN && segment.t.EN !== segment.o ? segment.t.EN : null;
+
   return (
-    <div className="flex h-[100dvh] w-full items-center justify-center bg-black">
-      <div className="relative flex h-full w-full max-w-md flex-col overflow-hidden bg-slate-950 text-center select-none">
+    <div className="player-shell flex w-full items-center justify-center bg-black">
+      <div className="relative flex h-[100dvh] w-full max-w-md flex-col overflow-hidden bg-slate-950 text-center select-none">
         <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-indigo-950 via-slate-950 to-black" />
 
         {/* --- Visualizer --- */}
-        <div className="relative z-10 h-[34%] w-full flex-shrink-0">
+        <div className="relative z-10 h-[40%] w-full flex-shrink-0">
           <ComeOverVisuals
             key={visualKey}
             isPlaying={isPlaying}
-            pulse={lineIndex * 1000 + wordIndex}
-            scene={sceneForLine(lineIndex)}
+            scene={segment?.visual.scene ?? 'street'}
+            sceneProgress={segmentProgress}
+            transition={segment?.visual.transition ?? 'dissolve'}
+            visualEvent={visualEvent}
+            reducedMotion={reduced}
           />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent to-slate-950" />
           <div className="pointer-events-none absolute left-4 top-4 text-left">
@@ -147,49 +167,91 @@ export default function App() {
           </div>
         </div>
 
-        {/* --- Lyrics (karaoke + multilingual subtitles) --- */}
+        {/* --- Lyrics (current display segment only) --- */}
         <div className="relative z-10 flex min-h-0 flex-grow flex-col px-4 pt-2">
-          {/* Original + romanization, karaoke-highlighted */}
-          <div
-            className="flex-shrink-0 pb-2 text-center"
-            style={{ textShadow: '0 4px 18px rgba(0,0,0,0.85)' }}
-          >
-            <p className="text-xl font-bold leading-snug tracking-tight md:text-2xl">
-              {words.map((wd, i) => (
-                <Word key={`o-${i}`} text={wd.o} on={i <= wordIndex} color={SUNG} dim="rgba(255,255,255,0.8)" />
-              ))}
-            </p>
-            {line.r && (
-              <p className="mt-1 text-sm font-medium leading-snug md:text-base">
-                {words.map((wd, i) => (
-                  <Word key={`r-${i}`} text={wd.r} on={i <= wordIndex} color={SUNG_RO} dim="rgba(255,255,255,0.4)" />
-                ))}
-              </p>
-            )}
-            {primaryEn && <p className="mt-1.5 text-sm leading-snug text-white/85">{primaryEn}</p>}
+          <div className="lyric-segment flex-shrink-0" style={{ textShadow: '0 4px 18px rgba(0,0,0,0.85)' }}>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={segment?.id ?? 'none'}
+                initial={reduced ? { opacity: 0 } : { opacity: 0, y: 10, filter: 'blur(5px)' }}
+                animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0, filter: 'blur(0px)' }}
+                exit={reduced ? { opacity: 0 } : { opacity: 0, y: -8, filter: 'blur(4px)' }}
+                transition={{ duration: reduced ? 0.001 : 0.22, ease: [0.22, 1, 0.36, 1] }}
+                className="w-full"
+              >
+                {segment && (
+                  <>
+                    <KaraokeLine
+                      words={segment.words}
+                      upTo={wordIndex}
+                      color={SUNG}
+                      dim="rgba(255,255,255,0.8)"
+                      reduced={reduced}
+                      fitKey={segment.o}
+                      pick={(w) => w.o}
+                      className="font-bold tracking-tight"
+                      minPx={16}
+                      maxPx={30}
+                    />
+                    {segment.hasR && segment.r && (
+                      <KaraokeLine
+                        words={segment.words}
+                        upTo={wordIndex}
+                        color={SUNG_RO}
+                        dim="rgba(255,255,255,0.4)"
+                        reduced={reduced}
+                        fitKey={segment.r}
+                        pick={(w) => w.r}
+                        className="mt-1 font-medium"
+                        minPx={11}
+                        maxPx={17}
+                      />
+                    )}
+                    {primaryEn && (
+                      <FitLine
+                        text={primaryEn}
+                        className="mt-1.5 text-white/85"
+                        minPx={11}
+                        maxPx={16}
+                      />
+                    )}
+                  </>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
 
-          {/* Multilingual subtitles — one clean, truncated line per language */}
+          {/* Other-language subtitles — one fitted, never-truncated line each */}
           <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto border-t border-white/10 pt-1.5">
-            <ul className="space-y-0.5 text-left">
-              {otherLangs.map((code) => (
-                <li key={code} className="flex items-baseline gap-2">
-                  <span className="w-8 flex-shrink-0 text-right text-[11px] font-bold text-amber-200/70">{code}</span>
-                  <span
-                    dir={RTL_LANGS.includes(code) ? 'rtl' : 'ltr'}
-                    title={line.t[code]}
-                    className="min-w-0 flex-1 truncate text-[13px] leading-relaxed text-white/85"
+            <ul className="space-y-1 text-left">
+              <AnimatePresence initial={false}>
+                {otherLangs.map((code) => (
+                  <motion.li
+                    key={`${segment.id}-${code}`}
+                    initial={reduced ? { opacity: 0 } : { opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: reduced ? 0.001 : 0.18 }}
+                    className="flex items-baseline gap-2"
                   >
-                    {line.t[code]}
-                  </span>
-                </li>
-              ))}
+                    <span className="w-8 flex-shrink-0 text-right text-[11px] font-bold text-amber-200/70">{code}</span>
+                    <FitLine
+                      text={segment.t[code]}
+                      dir={RTL_LANGS.includes(code) ? 'rtl' : 'ltr'}
+                      className="min-w-0 flex-1 text-white/85"
+                      style={{ textAlign: RTL_LANGS.includes(code) ? 'right' : 'left' }}
+                      minPx={11}
+                      maxPx={14}
+                    />
+                  </motion.li>
+                ))}
+              </AnimatePresence>
             </ul>
           </div>
         </div>
 
         {/* --- Controls --- */}
-        <div className="relative z-20 flex-shrink-0 px-5 pb-6 pt-2">
+        <div className="relative z-20 flex-shrink-0 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2">
           <div className="mx-auto mb-3 flex max-w-xs items-center gap-2">
             <span className="w-9 text-right text-[11px] font-mono text-white/45">
               {String(lineIndex + 1).padStart(2, '0')}
@@ -197,7 +259,7 @@ export default function App() {
             <div className="h-1 flex-grow overflow-hidden rounded-full bg-white/10">
               <motion.div
                 className="h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-500"
-                animate={{ width: `${((lineIndex + 1) / TOTAL) * 100}%` }}
+                animate={{ width: `${songProgress * 100}%` }}
                 transition={{ ease: 'easeOut', duration: 0.3 }}
               />
             </div>
@@ -206,16 +268,16 @@ export default function App() {
 
           <div className="flex justify-center">
             <div className="flex items-center gap-3 rounded-full border border-white/10 bg-black/45 px-4 py-2.5 shadow-lg backdrop-blur-md">
-              <button onClick={() => goToLine(lineIndex - 1)} className="text-white/70 transition-colors hover:text-white" aria-label="Previous line">
+              <button type="button" onClick={previousLine} className="touch-target text-white/70 transition-colors hover:text-white" aria-label="Previous line">
                 <SkipBack size={22} />
               </button>
-              <button onClick={() => setIsPlaying((p) => !p)} className="text-white transition-transform hover:scale-110" aria-label={isPlaying ? 'Pause' : 'Play'}>
+              <button type="button" onClick={() => setIsPlaying((p) => !p)} className="touch-target text-white transition-transform hover:scale-110" aria-label={isPlaying ? 'Pause' : 'Play'}>
                 {isPlaying ? <Pause size={30} /> : <Play size={30} />}
               </button>
-              <button onClick={() => goToLine(lineIndex + 1)} className="text-white/70 transition-colors hover:text-white" aria-label="Next line">
+              <button type="button" onClick={nextLine} className="touch-target text-white/70 transition-colors hover:text-white" aria-label="Next line">
                 <SkipForward size={22} />
               </button>
-              <button onClick={restart} className="text-white/70 transition-colors hover:text-white" aria-label="Restart">
+              <button type="button" onClick={fullRestart} className="touch-target text-white/70 transition-colors hover:text-white" aria-label="Restart">
                 <RotateCcw size={20} />
               </button>
               <div className="mx-1 h-7 w-px bg-white/15" />

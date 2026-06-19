@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect } from 'react';
 
 // --- Animated multi-scene visualizer for "Come Over" -----------------------
 // A chibi idol character moves through 12 distinct scenes as the song plays,
@@ -21,15 +21,27 @@ const PAL = {
   pants: '#181820', scarf: '#e8e0d0',
 };
 
-export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) {
+export default function ComeOverVisuals({
+  isPlaying,
+  scene = 'street',
+  sceneProgress = 0,
+  transition = 'dissolve',
+  visualEvent = null,
+  reducedMotion = false,
+}) {
   const canvasRef = useRef(null);
   const rafRef = useRef(null);
 
   const A = useRef({
     stars: [], drops: [], splashes: [], ripples: [], smoke: [], motes: [], clouds: [], skyline: [],
+    ghosts: [], pages: [], dust: [],
     wanderer: { x: 0, knockArm: 0, walk: 0 },
-    beat: 0, flash: 0, doorGlow: 0.6,
-    sceneCur: null, veil: 0,
+    beat: 0, flash: 0,
+    doorGlow: 0.65, doorGlowTarget: 0.65, doorOpen: 0, doorOpenTarget: 0,
+    dawn: 0, dawnTarget: 0, phoneGlow: 0, beam: 0, redPulse: 0,
+    rowStroke: 0, headBow: 0, heartPulse: 0, cameraShake: 0, drift: 0, driftTarget: 0,
+    sceneCur: null, veil: 0, transitionType: 'dissolve',
+    pendingEvent: null, lastEventId: null,
     layout: null, t: 0,
   }).current;
 
@@ -37,22 +49,17 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
   playingRef.current = isPlaying;
   const sceneRef = useRef(scene);
   sceneRef.current = scene;
+  const progressRef = useRef(sceneProgress);
+  progressRef.current = sceneProgress;
+  const transitionRef = useRef(transition);
+  transitionRef.current = transition;
+  const reducedRef = useRef(reducedMotion);
+  reducedRef.current = reducedMotion;
 
-  const triggerBeat = useCallback(() => {
-    A.beat = 1;
-    if (A.layout && A.sceneCur === 'house') {
-      A.ripples.push({ r: A.layout.px * 2, life: 1, max: A.layout.w * 0.16 });
-      A.wanderer.knockArm = 1;
-    }
-  }, [A]);
-
-  const prevPulse = useRef(pulse);
+  // The newest semantic event is queued; the draw loop dispatches it once.
   useEffect(() => {
-    if (pulse !== prevPulse.current) {
-      prevPulse.current = pulse;
-      if (playingRef.current) triggerBeat();
-    }
-  }, [pulse, triggerBeat]);
+    if (visualEvent) A.pendingEvent = visualEvent;
+  }, [visualEvent, A]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -306,11 +313,13 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
 
     const rain = (intensity, playing, color = 'rgba(180,200,235,') => {
       const { w, groundY } = A.layout;
+      const reduced = reducedRef.current;
       ctx.strokeStyle = `${color}${0.3 * (0.4 + intensity)})`;
       ctx.lineWidth = 1;
       ctx.beginPath();
       A.drops.forEach((d, i) => {
         if (intensity < 0.4 && i % 2 === 0) return;
+        if (reduced && i % 2 === 0) return; // ~50% fewer drops
         ctx.moveTo(d.x, d.y);
         ctx.lineTo(d.x - d.len * 0.28 * (0.6 + intensity), d.y - d.len * (0.6 + intensity));
         if (playing) {
@@ -456,7 +465,7 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
       ctx.fillRect(0, groundY, w, h - groundY);
       const fx = w * 0.22;
       idolSit(fx, groundY - px * 0.5, px, {});
-      const pg = 0.6 + 0.4 * A.beat;
+      const pg = 0.6 + 0.4 * Math.max(A.beat, A.phoneGlow);
       const phx = fx + px * 3, phy = groundY - px * 5;
       const glow = ctx.createRadialGradient(phx, phy, 0, phx, phy, px * 7);
       glow.addColorStop(0, `rgba(130,195,255,${0.8 * pg})`);
@@ -542,9 +551,8 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
       ctx.fillStyle = '#1b2444';
       ctx.fillRect(winX + winW / 2 - 1, winY, 2, winH);
       ctx.fillRect(winX, winY + winH / 2 - 1, winW, 2);
-      // glowing door + knocking figure
-      A.doorGlow += ((0.65 + 0.35 * A.beat) - A.doorGlow) * 0.1;
-      const g = A.doorGlow;
+      // glowing door + knocking figure (doorGlow/doorOpen eased in main loop)
+      const g = Math.min(1.4, A.doorGlow + A.heartPulse * 0.3);
       const dw = hw * 0.32, dh = hh * 0.46, dx = hx + hw * 0.12, dy = groundY - dh, dcx = dx + dw / 2, dcy = dy + dh * 0.4;
       const spill = ctx.createRadialGradient(dcx, dcy, dw * 0.2, dcx, dcy, dw * 3.2);
       spill.addColorStop(0, `rgba(255,190,100,${0.55 * g})`);
@@ -555,6 +563,15 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
       ctx.fillRect(dx, dy, dw, dh);
       ctx.fillStyle = `rgba(255,230,160,${0.85 * g})`;
       ctx.fillRect(dx + dw * 0.82, dy + dh * 0.46, dw * 0.1, dh * 0.08);
+      // 'door-open' / 'final-open' cue — a warm opening widens from the hinge.
+      if (A.doorOpen > 0.01) {
+        const ow = dw * Math.min(1, A.doorOpen);
+        const og = ctx.createLinearGradient(dx, 0, dx + ow, 0);
+        og.addColorStop(0, 'rgba(255,238,180,0.95)');
+        og.addColorStop(1, 'rgba(255,205,125,0.45)');
+        ctx.fillStyle = og;
+        ctx.fillRect(dx, dy, ow, dh);
+      }
       A.ripples = A.ripples.filter((rp) => rp.life > 0);
       A.ripples.forEach((rp) => {
         if (playing) { rp.life -= 0.04; rp.r += (rp.max - rp.r) * 0.08; }
@@ -564,8 +581,12 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
         ctx.arc(dcx, dcy, rp.r, 0, TAU);
         ctx.stroke();
       });
-      A.wanderer.knockArm *= 0.86;
-      idol(dx - px * 3, groundY, px * 1.1, { knock: A.wanderer.knockArm });
+      // 'approach-door' cue eases the walker in toward the door across the line.
+      const approach = Math.min(1, progressRef.current);
+      const restX = dx - px * 3;
+      const walkX = restX - (1 - approach) * w * 0.16;
+      idol(walkX, groundY, px * 1.1, { knock: A.wanderer.knockArm, walk: approach < 0.96 ? A.wanderer.walk : null });
+      if (playing && approach < 0.96) A.wanderer.walk += 0.18;
       rain(0.55, playing);
     };
 
@@ -595,6 +616,11 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
         ctx.fillStyle = `rgba(${colors[bi % colors.length]},0.12)`;
         ctx.fillRect(b.x, groundY, b.w, h - groundY);
       });
+      // 'blood-pulse' cue — wet-floor reflection flushes red briefly.
+      if (A.redPulse > 0.01) {
+        ctx.fillStyle = `rgba(180,30,46,${A.redPulse * 0.28})`;
+        ctx.fillRect(0, groundY, w, h - groundY);
+      }
       if (playing) { A.wanderer.x += Math.max(1, w * 0.0026); A.wanderer.walk += 0.22; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
       idol(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
       rain(0.75, playing, 'rgba(200,180,240,');
@@ -675,7 +701,7 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
       ctx.moveTo(-px * 8, 0); ctx.lineTo(px * 8, 0); ctx.lineTo(px * 5, px * 3); ctx.lineTo(-px * 5, px * 3); ctx.closePath();
       ctx.fill();
       idolSit(0, -px * 0.5, px, { noLegs: true });
-      const stroke = Math.sin(A.t * 0.06) * 0.5;
+      const stroke = Math.sin(A.t * 0.06) * (0.5 + A.rowStroke * 0.6);
       ctx.strokeStyle = RIM;
       ctx.lineWidth = Math.max(2, px * 0.7);
       ctx.beginPath();
@@ -755,26 +781,229 @@ export default function ComeOverVisuals({ isPlaying, pulse, scene = 'street' }) 
       train: sceneTrain, rooftop: sceneRooftop, house: sceneHouse, neon: sceneNeon,
       storm: sceneStorm, boat: sceneBoat, sunset: sceneSunset, dawn: sceneDawn,
     };
+    const WALK_SCENES = { street: 1, citywalk: 1, neon: 1, train: 1 };
+    const DRIFT_CUES = { 'lost-drift': 1, 'lost-echo': 1, 'ghost-trail': 1, 'cliff-wind': 1 };
+
+    // --- particle emitters (all capped) ---
+    const pushDoorRipple = (str = 1) => {
+      if (!A.layout) return;
+      A.ripples.push({ r: A.layout.px * 2, life: 1, max: A.layout.w * 0.16 * (0.7 + str) });
+      if (A.ripples.length > 6) A.ripples.shift();
+    };
+    const emitWarmMotes = (n) => {
+      if (!A.layout) return;
+      const { w, groundY } = A.layout;
+      for (let i = 0; i < n && A.motes.length < 70; i += 1) {
+        A.motes.push({ x: w * (0.3 + Math.random() * 0.4), y: groundY * (0.55 + Math.random() * 0.4), life: 1 });
+      }
+    };
+    const emitSmoke = (n) => {
+      if (!A.layout) return;
+      const { w, groundY, px } = A.layout;
+      for (let i = 0; i < n && A.smoke.length < 40; i += 1) {
+        A.smoke.push({ x: w * 0.5 + (Math.random() - 0.5) * px * 10, y: groundY - px * 3, r: px * 2, life: 1 });
+      }
+    };
+    const emitDust = (n) => {
+      if (!A.layout) return;
+      const { w, h } = A.layout;
+      for (let i = 0; i < n && A.dust.length < 50; i += 1) {
+        A.dust.push({ x: w * (0.4 + Math.random() * 0.28), y: h * (0.2 + Math.random() * 0.5), life: 1, vy: -(0.1 + Math.random() * 0.2) });
+      }
+    };
+    const emitPages = (n) => {
+      if (!A.layout) return;
+      const { w, h } = A.layout;
+      for (let i = 0; i < n && A.pages.length < 16; i += 1) {
+        A.pages.push({ x: -20, y: h * (0.18 + Math.random() * 0.5), life: 1, sp: w * (0.01 + Math.random() * 0.014) });
+      }
+    };
+    const pushGhost = () => {
+      A.ghosts.push({ x: A.wanderer.x, life: 1 });
+      if (A.ghosts.length > 4) A.ghosts.shift();
+    };
+
+    // --- semantic event → canvas state (no generic per-word beat actions) ---
+    const triggerVisualEvent = (event) => {
+      if (!event || event.id === A.lastEventId) return;
+      A.lastEventId = event.id;
+      const reduced = reducedRef.current;
+      const I = event.intensity ?? 0.5;
+      A.beat = Math.max(A.beat, I);
+      if (event.wordIndex === 0 && !DRIFT_CUES[event.type]) A.driftTarget = 0;
+
+      switch (event.type) {
+        case 'knock':
+          A.wanderer.knockArm = 1; if (!reduced) A.cameraShake = Math.max(A.cameraShake, 0.6); pushDoorRipple(1); break;
+        case 'heartbeat-knock':
+          A.wanderer.knockArm = 1; A.heartPulse = 1; if (!reduced) A.cameraShake = Math.max(A.cameraShake, 0.4); pushDoorRipple(0.8); break;
+        case 'door-open':
+          A.doorOpenTarget = Math.max(A.doorOpenTarget, 0.5); A.doorGlowTarget = 1; break;
+        case 'final-open':
+          A.doorOpenTarget = 1; A.doorGlowTarget = 1.3; A.dawnTarget = 1; emitWarmMotes(reduced ? 10 : 24); break;
+        case 'arrive-door':
+          A.doorGlowTarget = 0.9; break;
+        case 'echo-over':
+          pushDoorRipple(0.5); break;
+        case 'love-fade':
+          A.doorGlowTarget = 0.45; break;
+        case 'phone-glow':
+        case 'phone-check':
+          A.phoneGlow = 1; break;
+        case 'smoke':
+          emitSmoke(reduced ? 6 : 12); break;
+        case 'dust-beam':
+          A.beam = 1; emitDust(reduced ? 8 : 20); break;
+        case 'blood-pulse':
+          A.redPulse = 1; break;
+        case 'page-turn':
+          emitPages(reduced ? 4 : 8); break;
+        case 'row-forward':
+          A.rowStroke = 1; break;
+        case 'apology':
+        case 'apology-reflection':
+          A.headBow = 1; A.doorGlowTarget = 0.55; break;
+        case 'rescue-light':
+          A.dawnTarget = Math.max(A.dawnTarget, 0.4); break;
+        case 'lost-drift':
+          A.driftTarget = 0.6; break;
+        case 'lost-echo':
+        case 'ghost-trail':
+          if (!reduced) pushGhost(); A.driftTarget = 0.8; break;
+        case 'cliff-wind':
+          A.driftTarget = 0.5; break;
+        case 'hurt-storm':
+          if (!reduced) A.cameraShake = Math.max(A.cameraShake, 0.3); break;
+        case 'metaphor-distort':
+          if (!reduced) A.cameraShake = Math.max(A.cameraShake, 0.25); break;
+        default:
+          break;
+      }
+    };
+
+    const drawTransitionOverlay = () => {
+      const v = A.veil;
+      if (v <= 0.01) return;
+      const { w, h } = A.layout;
+      switch (A.transitionType) {
+        case 'flash-cut':
+          ctx.fillStyle = `rgba(235,240,255,${Math.min(0.15, v * 0.15)})`;
+          ctx.fillRect(0, 0, w, h);
+          break;
+        case 'warm-fade':
+          ctx.fillStyle = `rgba(18,9,4,${v * 0.9})`; ctx.fillRect(0, 0, w, h);
+          ctx.fillStyle = `rgba(255,180,90,${v * 0.12})`; ctx.fillRect(0, 0, w, h);
+          break;
+        case 'light-wipe': {
+          ctx.fillStyle = `rgba(4,6,16,${v * 0.85})`; ctx.fillRect(0, 0, w, h);
+          const cx = w * (1 - v);
+          const wipe = ctx.createLinearGradient(cx - w * 0.2, 0, cx + w * 0.1, 0);
+          wipe.addColorStop(0, 'rgba(255,235,200,0)');
+          wipe.addColorStop(0.6, `rgba(255,235,200,${v * 0.35})`);
+          wipe.addColorStop(1, 'rgba(255,235,200,0)');
+          ctx.fillStyle = wipe; ctx.fillRect(0, 0, w, h);
+          break;
+        }
+        case 'rain-wipe':
+          ctx.fillStyle = `rgba(6,10,22,${v * 0.9})`; ctx.fillRect(0, 0, w, h);
+          ctx.strokeStyle = `rgba(150,170,210,${v * 0.4})`; ctx.lineWidth = 1; ctx.beginPath();
+          for (let i = 0; i < 26; i += 1) { const x = (i * 57) % w; ctx.moveTo(x, 0); ctx.lineTo(x - 14, h); }
+          ctx.stroke();
+          break;
+        default:
+          ctx.fillStyle = `rgba(2,3,8,${v})`; ctx.fillRect(0, 0, w, h);
+      }
+    };
 
     const draw = () => {
       const L = A.layout;
       if (!L) return;
       A.t += 1;
       const playing = playingRef.current;
+      const reduced = reducedRef.current;
+
+      if (A.pendingEvent) triggerVisualEvent(A.pendingEvent);
+
+      // decays + eased targets (clamped, never NaN)
       A.beat *= 0.9;
+      A.phoneGlow *= 0.94; A.redPulse *= 0.92; A.rowStroke *= 0.9; A.beam *= 0.95;
+      A.heartPulse *= 0.92; A.headBow *= 0.95; A.cameraShake *= reduced ? 0 : 0.86;
+      A.wanderer.knockArm *= 0.86;
+      A.doorGlow += (A.doorGlowTarget - A.doorGlow) * 0.08;
+      A.doorOpen += (A.doorOpenTarget - A.doorOpen) * 0.06;
+      A.dawn += (A.dawnTarget - A.dawn) * 0.04;
+      A.drift += ((reduced ? 0 : A.driftTarget) - A.drift) * 0.05;
+
       const target = sceneRef.current;
       if (A.sceneCur !== target) {
-        A.veil += (1 - A.veil) * 0.14;
+        if (A.veil < 0.05) A.transitionType = transitionRef.current;
+        A.veil += (1 - A.veil) * 0.16;
         if (A.veil > 0.92) A.sceneCur = target;
       } else {
         A.veil += (0 - A.veil) * 0.14;
       }
+
       ctx.clearRect(0, 0, L.w, L.h);
+      ctx.save();
+      let tx = 0;
+      let ty = 0;
+      if (A.cameraShake > 0.01) {
+        tx += (Math.random() - 0.5) * A.cameraShake * L.px * 2.2;
+        ty += (Math.random() - 0.5) * A.cameraShake * L.px * 2.2;
+      }
+      if (A.drift > 0.01) tx += Math.sin(A.t * 0.03) * A.drift * L.w * 0.02;
+      ctx.translate(tx, ty);
       (SCENES[A.sceneCur] || sceneStreet)(playing);
-      if (A.veil > 0.01) {
-        ctx.fillStyle = `rgba(2,3,8,${A.veil})`;
+
+      // ghost-trail echoes for the walking scenes
+      if (A.ghosts.length && WALK_SCENES[A.sceneCur]) {
+        for (const gh of A.ghosts) {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, gh.life) * 0.22;
+          idol(gh.x, L.groundY, L.px, {});
+          ctx.restore();
+          if (playing) gh.life -= 0.018;
+        }
+        A.ghosts = A.ghosts.filter((gh) => gh.life > 0);
+      }
+      // drifting paper for the 'page-turn' cue
+      if (A.pages.length) {
+        ctx.fillStyle = 'rgba(245,240,225,0.8)';
+        for (const pg of A.pages) {
+          if (playing) { pg.x += pg.sp; pg.life -= 0.004; }
+          ctx.save();
+          ctx.translate(pg.x, pg.y + Math.sin(pg.x * 0.05) * L.px);
+          ctx.globalAlpha = Math.max(0, Math.min(1, pg.life));
+          ctx.fillRect(0, 0, L.px * 3, L.px * 2.2);
+          ctx.restore();
+        }
+        A.pages = A.pages.filter((pg) => pg.life > 0 && pg.x < L.w + 30);
+      }
+      // dust motes in the flashlight beam ('dust-beam')
+      if (A.dust.length) {
+        ctx.fillStyle = `rgba(255,240,200,0.6)`;
+        for (const d of A.dust) {
+          if (playing) { d.y += d.vy; d.life -= 0.01; }
+          ctx.globalAlpha = Math.max(0, d.life) * 0.6;
+          ctx.fillRect(d.x, d.y, L.px * 0.6, L.px * 0.6);
+        }
+        ctx.globalAlpha = 1;
+        A.dust = A.dust.filter((d) => d.life > 0);
+      }
+      ctx.restore();
+
+      // 'apology' head-bow read as a soft vignette dimming
+      if (A.headBow > 0.02) {
+        ctx.fillStyle = `rgba(2,4,10,${A.headBow * 0.28})`;
         ctx.fillRect(0, 0, L.w, L.h);
       }
+      // 'final-open' dawn warmth wash
+      if (A.dawn > 0.02) {
+        ctx.fillStyle = `rgba(255,200,130,${A.dawn * 0.12})`;
+        ctx.fillRect(0, 0, L.w, L.h);
+      }
+
+      drawTransitionOverlay();
       rafRef.current = requestAnimationFrame(draw);
     };
 
