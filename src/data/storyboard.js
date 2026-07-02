@@ -22,8 +22,8 @@ export const STORYBOARD = [
   // verse 1 — alone, phone glow, time passed, burying memories
   { scene: 'room', cue: 'phone-glow', transition: 'warm-fade', intensity: 0.55, display: { breakAfter: [5] } }, // 6
   { scene: 'memory', cue: 'bury-memory', transition: 'dissolve', intensity: 0.55, display: { breakAfter: [3] } }, // 7 — burying the keepsake
-  { scene: 'train', cue: 'late-clock', transition: 'dissolve', intensity: 0.55, display: { breakAfter: [3] } }, // 8
-  { scene: 'day', cue: 'rewind-restart', transition: 'warm-fade', intensity: 0.6, display: { breakAfter: [2] } }, // 9
+  { scene: 'clocktower', cue: 'late-clock', transition: 'dissolve', intensity: 0.55, display: { breakAfter: [3] } }, // 8 — beneath the racing clock
+  { scene: 'bench', cue: 'rewind-restart', transition: 'warm-fade', intensity: 0.6, display: { breakAfter: [2] } }, // 9 — the two of them, remembered
 
   // chorus 2 — out walking the city
   { scene: 'citywalk', cue: 'night-fall', transition: 'dissolve', intensity: 0.5, display: { breakAfter: [4] } }, // 10
@@ -45,7 +45,7 @@ export const STORYBOARD = [
   { scene: 'neon', cue: 'phone-check', transition: 'dissolve', intensity: 0.55 }, // 22
   { scene: 'storm', cue: 'question', transition: 'rain-wipe', intensity: 0.6, display: { breakAfter: [4] } }, // 23
   { scene: 'rooftop', cue: 'ghost-trail', transition: 'dissolve', intensity: 0.6, display: { breakAfter: [2] } }, // 24
-  { scene: 'rooftop', cue: 'dust-beam', transition: 'light-wipe', intensity: 0.6, display: { breakAfter: [3] } }, // 25
+  { scene: 'flashbeam', cue: 'dust-beam', transition: 'light-wipe', intensity: 0.6, display: { breakAfter: [3] } }, // 25 — dust in the flashlight
   { scene: 'storm', cue: 'smoke', transition: 'rain-wipe', intensity: 0.65, display: { breakAfter: [3] } }, // 26
   { scene: 'storm', cue: 'metaphor-distort', transition: 'flash-cut', intensity: 0.6 }, // 27
 

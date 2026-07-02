@@ -1052,11 +1052,197 @@ export default function ComeOverVisuals({
       rain(0.25, playing);
     };
 
+
+    // A soft feminine silhouette — the "you" of the song, kept faceless like
+    // a memory. Seated (bench) and standing (crossing the flashlight beam).
+    const girlSit = (cx, hipY, p, col = '#432c50') => {
+      const hu = (p * 11) / 3;
+      ctx.strokeStyle = col; ctx.lineWidth = 0.24 * hu; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cx - 0.12 * hu, hipY); ctx.lineTo(cx - 0.15 * hu, hipY + 1.25 * hu); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + 0.12 * hu, hipY); ctx.lineTo(cx + 0.09 * hu, hipY + 1.25 * hu); ctx.stroke();
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(cx - 0.42 * hu, hipY + 0.15 * hu);
+      ctx.quadraticCurveTo(cx - 0.3 * hu, hipY - 1.0 * hu, cx, hipY - 1.05 * hu);
+      ctx.quadraticCurveTo(cx + 0.3 * hu, hipY - 1.0 * hu, cx + 0.42 * hu, hipY + 0.15 * hu);
+      ctx.closePath(); ctx.fill();
+      const hy = hipY - 1.5 * hu;
+      ctx.beginPath(); ctx.arc(cx - 0.05 * hu, hy, 0.42 * hu, 0, TAU); ctx.fill(); // head, leaning a touch
+      ctx.beginPath(); // long hair falling behind the shoulders
+      ctx.moveTo(cx - 0.45 * hu, hy);
+      ctx.quadraticCurveTo(cx - 0.55 * hu, hipY - 0.35 * hu, cx - 0.36 * hu, hipY + 0.12 * hu);
+      ctx.lineTo(cx + 0.3 * hu, hipY + 0.12 * hu);
+      ctx.quadraticCurveTo(cx + 0.5 * hu, hipY - 0.35 * hu, cx + 0.37 * hu, hy);
+      ctx.closePath(); ctx.fill();
+    };
+
+    const girlStand = (cx, footY, p, col = '#aab6d8') => {
+      const hu = (p * 11) / 3;
+      ctx.strokeStyle = col; ctx.lineWidth = 0.2 * hu; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cx - 0.1 * hu, footY - 1.05 * hu); ctx.lineTo(cx - 0.13 * hu, footY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + 0.1 * hu, footY - 1.05 * hu); ctx.lineTo(cx + 0.13 * hu, footY); ctx.stroke();
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(cx - 0.45 * hu, footY - 0.95 * hu);
+      ctx.quadraticCurveTo(cx - 0.28 * hu, footY - 2.0 * hu, cx, footY - 2.05 * hu);
+      ctx.quadraticCurveTo(cx + 0.28 * hu, footY - 2.0 * hu, cx + 0.45 * hu, footY - 0.95 * hu);
+      ctx.closePath(); ctx.fill();
+      const hy = footY - 2.5 * hu;
+      ctx.beginPath(); ctx.arc(cx, hy, 0.4 * hu, 0, TAU); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cx - 0.4 * hu, hy);
+      ctx.quadraticCurveTo(cx - 0.54 * hu, footY - 1.55 * hu, cx - 0.3 * hu, footY - 1.12 * hu);
+      ctx.lineTo(cx + 0.3 * hu, footY - 1.12 * hu);
+      ctx.quadraticCurveTo(cx + 0.54 * hu, footY - 1.55 * hu, cx + 0.4 * hu, hy);
+      ctx.closePath(); ctx.fill();
+    };
+
+    // "좀 늦었지" — hurrying beneath the station clock, hands racing
+    const sceneClocktower = (playing) => {
+      const { w, h, groundY, px } = A.layout;
+      skyGrad('#141c42', '#2b3668', groundY);
+      stars(0.8);
+      litSkyline(groundY, 0.5, 'rgba(255,210,140,0.6)');
+      ctx.fillStyle = '#0e1428';
+      ctx.fillRect(0, groundY, w, h - groundY);
+      const tx = w * 0.62, tw = px * 7, th = h * 0.62, tt = groundY - th;
+      ctx.fillStyle = '#1a2348';
+      ctx.fillRect(tx - tw / 2, tt, tw, th);
+      ctx.fillStyle = '#131b3a';
+      ctx.beginPath();
+      ctx.moveTo(tx - tw * 0.7, tt); ctx.lineTo(tx, tt - px * 4); ctx.lineTo(tx + tw * 0.7, tt);
+      ctx.closePath(); ctx.fill();
+      // glowing clock face
+      const cy = tt + px * 5, cr = px * 2.6;
+      const cg = ctx.createRadialGradient(tx, cy, 0, tx, cy, cr * 3);
+      cg.addColorStop(0, 'rgba(255,230,170,0.5)');
+      cg.addColorStop(1, 'rgba(255,230,170,0)');
+      ctx.fillStyle = cg;
+      ctx.fillRect(tx - cr * 3, cy - cr * 3, cr * 6, cr * 6);
+      ctx.fillStyle = '#f6e7c0';
+      ctx.beginPath(); ctx.arc(tx, cy, cr, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#2a2340'; ctx.lineWidth = Math.max(1, px * 0.35);
+      ctx.beginPath(); ctx.arc(tx, cy, cr, 0, TAU); ctx.stroke();
+      ctx.fillStyle = '#3a2f50';
+      for (let i = 0; i < 12; i += 1) {
+        const a = (i / 12) * TAU;
+        ctx.fillRect(tx + Math.cos(a) * cr * 0.82 - px * 0.17, cy + Math.sin(a) * cr * 0.82 - px * 0.17, px * 0.35, px * 0.35);
+      }
+      // hands — the minute hand races: time has already run on
+      const ma = A.t * 0.045, ha = A.t * 0.00375 + 2;
+      ctx.strokeStyle = '#241c38'; ctx.lineCap = 'round';
+      ctx.lineWidth = Math.max(1.5, px * 0.4);
+      ctx.beginPath(); ctx.moveTo(tx, cy); ctx.lineTo(tx + Math.cos(ma) * cr * 0.72, cy + Math.sin(ma) * cr * 0.72); ctx.stroke();
+      ctx.lineWidth = Math.max(2, px * 0.5);
+      ctx.beginPath(); ctx.moveTo(tx, cy); ctx.lineTo(tx + Math.cos(ha) * cr * 0.45, cy + Math.sin(ha) * cr * 0.45); ctx.stroke();
+      wetGlow(tx, groundY, tw * 1.3, h - groundY, 'rgba(255,230,170,', 0.12, 5);
+      // he hurries past, a beat quicker than his usual stroll
+      if (playing) { A.wanderer.x += Math.max(0.5, w * 0.0019); A.wanderer.walk += 0.135; if (A.wanderer.x > w + px * 6) A.wanderer.x = -px * 6; }
+      idol(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
+      rain(0.4, playing);
+    };
+
+    // "다시 시작하는 우리" — a golden remembered evening on the park bench
+    const sceneBench = (playing) => {
+      const { w, h, groundY, px } = A.layout;
+      const g = ctx.createLinearGradient(0, 0, 0, groundY);
+      g.addColorStop(0, '#3c2a55'); g.addColorStop(0.6, '#b0586a'); g.addColorStop(1, '#e8a05e');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, groundY);
+      sun(w * 0.24, groundY - h * 0.16, Math.max(12, h * 0.07), '#ffd9a0');
+      // leafy tree over the bench
+      ctx.strokeStyle = '#241a30'; ctx.lineWidth = px * 1.3; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(w * 0.72, groundY); ctx.quadraticCurveTo(w * 0.71, groundY - h * 0.22, w * 0.68, groundY - h * 0.3); ctx.stroke();
+      [[0.68, 0.34, 7], [0.61, 0.3, 6], [0.76, 0.31, 6.5], [0.7, 0.26, 5]].forEach(([fx, fy, r]) => {
+        const cg2 = ctx.createRadialGradient(w * fx, groundY - h * fy, px, w * fx, groundY - h * fy, px * r);
+        cg2.addColorStop(0, 'rgba(80,46,64,0.95)');
+        cg2.addColorStop(1, 'rgba(80,46,64,0)');
+        ctx.fillStyle = cg2;
+        ctx.beginPath(); ctx.arc(w * fx, groundY - h * fy, px * r, 0, TAU); ctx.fill();
+      });
+      ctx.fillStyle = '#31203a';
+      ctx.fillRect(0, groundY, w, h - groundY);
+      // the bench
+      const bxc = w * 0.45, seatY = groundY - px * 3.4, bw2 = px * 10;
+      ctx.fillStyle = '#1d1426';
+      ctx.fillRect(bxc - bw2 / 2, seatY - px * 3.4, bw2, px * 0.7);
+      ctx.fillRect(bxc - bw2 / 2, seatY, bw2, px * 0.9);
+      ctx.fillRect(bxc - bw2 / 2 + px, seatY + px * 0.9, px * 0.7, px * 2.5);
+      ctx.fillRect(bxc + bw2 / 2 - px * 1.7, seatY + px * 0.9, px * 0.7, px * 2.5);
+      // the two of them, close together
+      idolSit(bxc - px * 2.2, seatY - px * 0.3, px * 0.95, { dangle: true });
+      girlSit(bxc + px * 2.3, seatY - px * 0.3, px * 0.95);
+      ctx.strokeStyle = 'rgba(255,200,140,0.5)'; ctx.lineWidth = Math.max(1, px * 0.2);
+      const ghu = (px * 0.95 * 11) / 3;
+      ctx.beginPath();
+      ctx.arc(bxc + px * 2.3 - 0.05 * ghu, seatY - px * 0.3 - 1.5 * ghu, 0.42 * ghu, -Math.PI * 0.75, -Math.PI * 0.05);
+      ctx.stroke();
+      // remembered fireflies drifting up
+      for (let i = 0; i < 9; i += 1) {
+        const ph = ((A.t * 0.004) + i / 9) % 1;
+        const mx = w * (0.2 + ((i * 37) % 60) / 100) + Math.sin(A.t * 0.02 + i) * px * 2;
+        const my = groundY - h * 0.08 - ph * h * 0.3;
+        ctx.fillStyle = `rgba(255,214,140,${(1 - ph) * 0.5})`;
+        ctx.fillRect(mx, my, px * 0.6, px * 0.6);
+      }
+    };
+
+    // "you pass like dust in a flashlight" — she crosses the beam, half dust
+    const sceneFlashbeam = (playing) => {
+      const { w, h, groundY, px } = A.layout;
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, '#07091a'); g.addColorStop(1, '#0c0f22');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#080a18';
+      ctx.fillRect(0, groundY, w, h - groundY);
+      // him, torch in hand
+      const hx = w * 0.18;
+      idol(hx, groundY, px, { look: 1 });
+      const hu = (px * 11) / 3;
+      const handX = hx + 0.55 * hu, handY = groundY - px * 11 + 1.5 * hu;
+      ctx.strokeStyle = PAL.coat; ctx.lineWidth = 0.24 * hu; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(hx + 0.38 * hu, groundY - px * 11 + 1.25 * hu);
+      ctx.lineTo(handX, handY);
+      ctx.stroke();
+      ctx.fillStyle = '#0d1226';
+      ctx.fillRect(handX - 0.08 * hu, handY - 0.12 * hu, 0.46 * hu, 0.24 * hu);
+      // the beam breathes with the dust-beam cue
+      const bI = 0.15 + 0.2 * A.beam + 0.03 * Math.sin(A.t * 0.05);
+      const bg2 = ctx.createLinearGradient(handX, handY, w * 0.98, groundY - h * 0.18);
+      bg2.addColorStop(0, `rgba(235,240,255,${bI * 1.5})`);
+      bg2.addColorStop(1, 'rgba(235,240,255,0)');
+      ctx.fillStyle = bg2;
+      ctx.beginPath();
+      ctx.moveTo(handX + 0.4 * hu, handY - 0.12 * hu);
+      ctx.lineTo(w * 0.98, groundY - h * 0.36);
+      ctx.lineTo(w * 0.98, groundY - h * 0.02);
+      ctx.lineTo(handX + 0.4 * hu, handY + 0.16 * hu);
+      ctx.closePath(); ctx.fill();
+      // she crosses the light and thins into dust
+      const ph = (A.t * 0.0035) % 1;
+      const gx = w * (0.42 + 0.36 * ph);
+      const fade = Math.sin(ph * Math.PI);
+      ctx.save();
+      ctx.globalAlpha = fade * 0.5;
+      girlStand(gx, groundY, px * 0.96);
+      ctx.restore();
+      for (let i = 0; i < 14; i += 1) {
+        const dph = ((A.t * 0.004) + i / 14) % 1;
+        const dx = gx - dph * px * 8 + Math.sin(i * 5) * px * 1.5;
+        const dy = groundY - px * 4 - (((i * 29) % 36) / 6) * px + Math.sin(A.t * 0.03 + i) * px * 0.6;
+        ctx.fillStyle = `rgba(230,236,255,${(1 - dph) * fade * 0.5})`;
+        ctx.fillRect(dx, dy, px * 0.5, px * 0.5);
+      }
+    };
+
     const SCENES = {
       street: sceneStreet, day: sceneDay, citywalk: sceneCitywalk, room: sceneRoom,
       train: sceneTrain, rooftop: sceneRooftop, house: sceneHouse, neon: sceneNeon,
       storm: sceneStorm, boat: sceneBoat, sunset: sceneSunset, dawn: sceneDawn,
       phonebooth: scenePhonebooth, memory: sceneMemory, cliff: sceneCliff,
+      clocktower: sceneClocktower, bench: sceneBench, flashbeam: sceneFlashbeam,
     };
     const WALK_SCENES = { street: 1, citywalk: 1, neon: 1, train: 1 };
     const DRIFT_CUES = { 'lost-drift': 1, 'lost-echo': 1, 'ghost-trail': 1, 'cliff-wind': 1 };
@@ -1070,8 +1256,8 @@ export default function ComeOverVisuals({
       'love-fade': 'sad', 'door-open': 'hope', knock: 'hope', 'heartbeat-knock': 'hope',
       'blood-pulse': 'sad', question: 'sad', 'ghost-trail': 'wist', 'dust-beam': 'wist',
       smoke: 'sad', 'metaphor-distort': 'neutral', 'cliff-wind': 'sad', 'hurt-storm': 'sad',
-      'rescue-light': 'smile', 'page-turn': 'smile', 'pain-fade': 'smile',
-      'row-forward': 'smile', 'final-open': 'smile',
+      'rescue-light': 'hope', 'page-turn': 'wist', 'pain-fade': 'wist',
+      'row-forward': 'neutral', 'final-open': 'smile',
     };
 
     // --- particle emitters (all capped) ---
