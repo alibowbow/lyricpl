@@ -681,6 +681,13 @@ export default function ComeOverVisuals({
       for (let rx2 = w * 0.5; rx2 < w; rx2 += px * 4) {
         ctx.beginPath(); ctx.moveTo(rx2, groundY - px * 4.6); ctx.lineTo(rx2, groundY); ctx.stroke();
       }
+      // "done with past life" — two faint former selves breathe behind him
+      [[0.58, 0.1, 0], [0.72, 0.08, 2.6]].forEach(([fx2, base, ph2]) => {
+        ctx.save();
+        ctx.globalAlpha = base + 0.07 * (0.5 + 0.5 * Math.sin(A.t * 0.02 + ph2));
+        idol(w * fx2, groundY, px * 0.95, {});
+        ctx.restore();
+      });
       // figure sitting on the ledge, legs dangling
       idolSit(w * 0.3, groundY, px, { dangle: true });
     };
@@ -1903,7 +1910,7 @@ export default function ComeOverVisuals({
       crossroad: sceneCrossroad, overpass: sceneOverpass, platform: scenePlatform, window: sceneWindow,
       alley: sceneAlley, busstop: sceneBusstop, store: sceneStore,
     };
-    const WALK_SCENES = { street: 1, citywalk: 1, neon: 1, train: 1 };
+    const WALK_SCENES = { street: 1, citywalk: 1, neon: 1, alley: 1 };
     const DRIFT_CUES = { 'lost-drift': 1, 'lost-echo': 1, 'ghost-trail': 1, 'cliff-wind': 1 };
     // how each lyric moment reads on the character's face
     const MOOD_BY_CUE = {
@@ -1978,7 +1985,9 @@ export default function ComeOverVisuals({
           if (!reduced) A.cameraShake = Math.max(A.cameraShake, 0.08);
           pushDoorRipple(0.35); break;
         case 'door-open':
-          A.doorOpenTarget = Math.max(A.doorOpenTarget, 0.5); A.doorGlowTarget = 1; A.houseHurry = true; break;
+          // a sliver of light — as if she might be listening; the full swing
+          // of the door is saved for 'final-open' at dawn
+          A.doorOpenTarget = Math.max(A.doorOpenTarget, 0.28); A.doorGlowTarget = 1; A.houseHurry = true; break;
         case 'final-open':
           A.doorOpenTarget = 1; A.doorGlowTarget = 1.3; A.dawnTarget = 1; emitWarmMotes(reduced ? 10 : 24); break;
         case 'arrive-door':
@@ -2095,8 +2104,18 @@ export default function ComeOverVisuals({
         if (A.veil < 0.05) A.transitionType = transitionRef.current;
         A.veil += (1 - A.veil) * 0.13;
         if (A.veil > 0.92) {
-          // walking in from the street starts fresh on each visit to the house
-          if (target === 'house') { A.houseApproach = 0; A.houseHurry = false; A.knockTimer = 0; }
+          // walking in from the street starts fresh on each visit to the house,
+          // with the door closed again — the full opening belongs to the finale
+          if (target === 'house') {
+            A.houseApproach = 0; A.houseHurry = false; A.knockTimer = 0;
+            A.doorOpenTarget = 0; A.doorOpen = Math.min(A.doorOpen, 0.2);
+            A.doorGlowTarget = 0.65;
+          }
+          // dawn warmth only survives cuts into sunset/dawn; never into the loop restart
+          if (target !== 'dawn' && target !== 'sunset') {
+            A.dawnTarget = 0;
+            A.dawn = Math.min(A.dawn, 0.35);
+          }
           A.sceneCur = target;
         }
       } else {

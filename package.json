@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "A beat-driven multilingual karaoke player for BTS - Come Over, with a pixel-art rainy-night visualizer.",
+  "description": "A beat-driven multilingual karaoke player for BTS - Come Over, with a lyric-synced animated night visualizer.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
