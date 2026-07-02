@@ -36,6 +36,7 @@ export default function ComeOverVisuals({
     stars: [], drops: [], splashes: [], ripples: [], smoke: [], motes: [], clouds: [], skyline: [],
     ghosts: [], pages: [], dust: [], oarRipples: [],
     wanderer: { x: 0, knockArm: 0, walk: 0 },
+    houseApproach: 0, houseHurry: false, knockTimer: 0, mood: 'wist',
     beat: 0, flash: 0,
     doorGlow: 0.65, doorGlowTarget: 0.65, doorOpen: 0, doorOpenTarget: 0,
     dawn: 0, dawnTarget: 0, phoneGlow: 0, beam: 0, redPulse: 0,
@@ -113,24 +114,53 @@ export default function ComeOverVisuals({
       ctx.fillStyle = 'rgba(220,130,120,0.16)';
       ctx.beginPath(); ctx.ellipse(cx - 0.27 * hu, faceCy + 0.23 * hu, 0.075 * hu, 0.04 * hu, 0, 0, TAU); ctx.fill();
       ctx.beginPath(); ctx.ellipse(cx + 0.27 * hu, faceCy + 0.23 * hu, 0.075 * hu, 0.04 * hu, 0, 0, TAU); ctx.fill();
-      // simple eyes + catchlight
+      // eyes, brows and mouth follow the current mood; a periodic blink keeps
+      // the face alive. moods: 'wist' (lonely), 'sad', 'hope', 'smile', 'neutral'.
+      const mood = A.mood || 'neutral';
       const eyeY = faceCy + 0.14 * hu, eyeDx = 0.18 * hu, ew = 0.105 * hu, eh = 0.12 * hu;
+      const blink = ((A.t + 37) % 210) < 7;
       [-1, 1].forEach((s) => {
         const ex = cx + s * eyeDx;
-        ctx.fillStyle = '#2a2230';
-        ctx.beginPath(); ctx.ellipse(ex, eyeY, ew, eh, 0, 0, TAU); ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,0.85)';
-        ctx.beginPath(); ctx.arc(ex - 0.03 * hu, eyeY - 0.04 * hu, 0.028 * hu, 0, TAU); ctx.fill();
+        if (blink || mood === 'smile') {
+          // closed lids: a happy arch for smiles, a soft line mid-blink
+          ctx.strokeStyle = '#2a2230'; ctx.lineWidth = 0.045 * hu; ctx.lineCap = 'round';
+          ctx.beginPath();
+          if (mood === 'smile' && !blink) ctx.arc(ex, eyeY + eh * 0.4, ew * 0.95, Math.PI * 1.12, Math.PI * 1.88);
+          else { ctx.moveTo(ex - ew * 0.8, eyeY); ctx.lineTo(ex + ew * 0.8, eyeY); }
+          ctx.stroke();
+        } else {
+          const droop = mood === 'sad' ? 0.78 : mood === 'wist' ? 0.9 : 1;
+          ctx.fillStyle = '#2a2230';
+          ctx.beginPath(); ctx.ellipse(ex, eyeY + (1 - droop) * eh * 0.5, ew, eh * droop, 0, 0, TAU); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.85)';
+          ctx.beginPath(); ctx.arc(ex - 0.03 * hu, eyeY - 0.03 * hu * droop, 0.028 * hu, 0, TAU); ctx.fill();
+        }
       });
-      // brows
+      // brows: worried inner-lift when sad, raised arch when hopeful
       ctx.strokeStyle = PAL.hair; ctx.lineWidth = 0.04 * hu; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(cx - eyeDx - 0.1 * hu, eyeY - 0.2 * hu); ctx.quadraticCurveTo(cx - eyeDx, eyeY - 0.23 * hu, cx - eyeDx + 0.09 * hu, eyeY - 0.205 * hu); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx + eyeDx - 0.09 * hu, eyeY - 0.205 * hu); ctx.quadraticCurveTo(cx + eyeDx, eyeY - 0.23 * hu, cx + eyeDx + 0.1 * hu, eyeY - 0.2 * hu); ctx.stroke();
-      // nose hint + mouth
+      const bY = eyeY - 0.2 * hu;
+      if (mood === 'sad') {
+        ctx.beginPath(); ctx.moveTo(cx - eyeDx - 0.1 * hu, bY + 0.02 * hu); ctx.quadraticCurveTo(cx - eyeDx, bY, cx - eyeDx + 0.09 * hu, bY - 0.045 * hu); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx + eyeDx - 0.09 * hu, bY - 0.045 * hu); ctx.quadraticCurveTo(cx + eyeDx, bY, cx + eyeDx + 0.1 * hu, bY + 0.02 * hu); ctx.stroke();
+      } else if (mood === 'hope') {
+        ctx.beginPath(); ctx.moveTo(cx - eyeDx - 0.1 * hu, bY - 0.02 * hu); ctx.quadraticCurveTo(cx - eyeDx, bY - 0.075 * hu, cx - eyeDx + 0.09 * hu, bY - 0.025 * hu); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx + eyeDx - 0.09 * hu, bY - 0.025 * hu); ctx.quadraticCurveTo(cx + eyeDx, bY - 0.075 * hu, cx + eyeDx + 0.1 * hu, bY - 0.02 * hu); ctx.stroke();
+      } else {
+        ctx.beginPath(); ctx.moveTo(cx - eyeDx - 0.1 * hu, bY); ctx.quadraticCurveTo(cx - eyeDx, bY - 0.03 * hu, cx - eyeDx + 0.09 * hu, bY - 0.005 * hu); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx + eyeDx - 0.09 * hu, bY - 0.005 * hu); ctx.quadraticCurveTo(cx + eyeDx, bY - 0.03 * hu, cx + eyeDx + 0.1 * hu, bY); ctx.stroke();
+      }
+      // nose hint
       ctx.strokeStyle = 'rgba(150,110,90,0.45)'; ctx.lineWidth = 0.022 * hu;
       ctx.beginPath(); ctx.moveTo(cx - 0.01 * hu, faceCy + 0.22 * hu); ctx.lineTo(cx + 0.02 * hu, faceCy + 0.27 * hu); ctx.stroke();
+      // mouth per mood
       ctx.strokeStyle = '#9a5b4a'; ctx.lineWidth = 0.03 * hu;
-      ctx.beginPath(); ctx.arc(cx, faceCy + 0.34 * hu, 0.07 * hu, 0.12 * Math.PI, 0.88 * Math.PI); ctx.stroke();
+      ctx.beginPath();
+      if (mood === 'sad') ctx.arc(cx, faceCy + 0.42 * hu, 0.06 * hu, Math.PI * 1.15, Math.PI * 1.85);
+      else if (mood === 'wist') { ctx.moveTo(cx - 0.05 * hu, faceCy + 0.36 * hu); ctx.lineTo(cx + 0.05 * hu, faceCy + 0.36 * hu); }
+      else if (mood === 'smile') ctx.arc(cx, faceCy + 0.33 * hu, 0.085 * hu, 0.1 * Math.PI, 0.9 * Math.PI);
+      else if (mood === 'hope') { ctx.stroke(); ctx.fillStyle = '#9a5b4a'; ctx.beginPath(); ctx.ellipse(cx, faceCy + 0.36 * hu, 0.035 * hu, 0.045 * hu, 0, 0, TAU); ctx.fill(); }
+      else ctx.arc(cx, faceCy + 0.34 * hu, 0.07 * hu, 0.12 * Math.PI, 0.88 * Math.PI);
+      if (mood !== 'hope') ctx.stroke();
       // hair with side-swept fringe
       ctx.fillStyle = PAL.hair;
       ctx.beginPath();
@@ -624,12 +654,23 @@ export default function ComeOverVisuals({
         ctx.arc(dcx, dcy, rp.r, 0, TAU);
         ctx.stroke();
       });
-      // 'approach-door' cue eases the walker in toward the door across the line.
-      const approach = Math.min(1, progressRef.current);
+      // One slow stroll to the door per house visit. The position is persistent
+      // state (not segment progress), so segment changes can never teleport him
+      // back; once he arrives he simply stays and knocks gently on cue.
+      if (playing && A.houseApproach < 1) {
+        A.houseApproach = Math.min(1, A.houseApproach + (A.houseHurry ? 0.011 : 0.0026));
+      }
+      const ap = A.houseApproach;
+      const ease = ap * ap * (3 - 2 * ap); // smoothstep: soft start, soft stop
       const restX = dx - px * 3;
-      const walkX = restX - (1 - approach) * w * 0.16;
-      idol(walkX, groundY, px * 1.1, { knock: A.wanderer.knockArm, walk: approach < 0.96 ? A.wanderer.walk : null });
-      if (playing && approach < 0.96) A.wanderer.walk += 0.18;
+      const startX = Math.max(px * 4, restX - w * 0.24);
+      const walkX = startX + (restX - startX) * ease;
+      const arriving = ap < 0.985;
+      idol(walkX, groundY, px * 1.1, {
+        knock: arriving ? 0 : A.wanderer.knockArm,
+        walk: arriving ? A.wanderer.walk : null,
+      });
+      if (playing && arriving) A.wanderer.walk += 0.16;
       rain(0.55, playing);
     };
 
@@ -841,6 +882,19 @@ export default function ComeOverVisuals({
     };
     const WALK_SCENES = { street: 1, citywalk: 1, neon: 1, train: 1 };
     const DRIFT_CUES = { 'lost-drift': 1, 'lost-echo': 1, 'ghost-trail': 1, 'cliff-wind': 1 };
+    // how each lyric moment reads on the character's face
+    const MOOD_BY_CUE = {
+      'night-fall': 'wist', 'lost-drift': 'wist', 'lost-echo': 'sad',
+      apology: 'sad', 'apology-reflection': 'sad', 'bury-memory': 'sad',
+      'phone-glow': 'wist', 'phone-check': 'wist', 'late-clock': 'wist',
+      'rewind-restart': 'smile', 'night-window': 'wist', 'return-route': 'hope',
+      'approach-door': 'hope', 'arrive-door': 'hope', 'echo-over': 'sad',
+      'love-fade': 'sad', 'door-open': 'hope', knock: 'hope', 'heartbeat-knock': 'hope',
+      'blood-pulse': 'sad', question: 'sad', 'ghost-trail': 'wist', 'dust-beam': 'wist',
+      smoke: 'sad', 'metaphor-distort': 'neutral', 'cliff-wind': 'sad', 'hurt-storm': 'sad',
+      'rescue-light': 'smile', 'page-turn': 'smile', 'pain-fade': 'smile',
+      'row-forward': 'smile', 'final-open': 'smile',
+    };
 
     // --- particle emitters (all capped) ---
     const pushDoorRipple = (str = 1) => {
@@ -889,18 +943,24 @@ export default function ComeOverVisuals({
       const I = event.intensity ?? 0.5;
       A.beat = Math.max(A.beat, I);
       if (event.wordIndex === 0 && !DRIFT_CUES[event.type]) A.driftTarget = 0;
+      if (MOOD_BY_CUE[event.type]) A.mood = MOOD_BY_CUE[event.type];
 
       switch (event.type) {
         case 'knock':
-          A.wanderer.knockArm = 1; if (!reduced) A.cameraShake = Math.max(A.cameraShake, 0.6); pushDoorRipple(1); break;
+          // arm the gentle-knock loop (soft repeated taps) instead of a jab
+          A.knockTimer = Math.max(A.knockTimer, 110); A.houseHurry = true;
+          if (!reduced) A.cameraShake = Math.max(A.cameraShake, 0.22);
+          pushDoorRipple(0.8); break;
         case 'heartbeat-knock':
-          A.wanderer.knockArm = 1; A.heartPulse = 1; if (!reduced) A.cameraShake = Math.max(A.cameraShake, 0.4); pushDoorRipple(0.8); break;
+          A.knockTimer = Math.max(A.knockTimer, 130); A.houseHurry = true; A.heartPulse = 1;
+          if (!reduced) A.cameraShake = Math.max(A.cameraShake, 0.18);
+          pushDoorRipple(0.7); break;
         case 'door-open':
-          A.doorOpenTarget = Math.max(A.doorOpenTarget, 0.5); A.doorGlowTarget = 1; break;
+          A.doorOpenTarget = Math.max(A.doorOpenTarget, 0.5); A.doorGlowTarget = 1; A.houseHurry = true; break;
         case 'final-open':
           A.doorOpenTarget = 1; A.doorGlowTarget = 1.3; A.dawnTarget = 1; emitWarmMotes(reduced ? 10 : 24); break;
         case 'arrive-door':
-          A.doorGlowTarget = 0.9; break;
+          A.doorGlowTarget = 0.9; A.houseHurry = true; break;
         case 'echo-over':
           pushDoorRipple(0.5); break;
         case 'love-fade':
@@ -986,7 +1046,16 @@ export default function ComeOverVisuals({
       A.beat *= 0.9;
       A.phoneGlow *= 0.94; A.redPulse *= 0.92; A.rowStroke *= 0.9; A.beam *= 0.95;
       A.heartPulse *= 0.92; A.headBow *= 0.95; A.cameraShake *= reduced ? 0 : 0.86;
-      A.wanderer.knockArm *= 0.86;
+      // gentle knocking: while the timer runs, the arm hovers and taps softly;
+      // a faint door ripple lands on each contact, then the arm eases down.
+      if (A.knockTimer > 0) {
+        if (playing) A.knockTimer -= 1;
+        A.wanderer.knockArm = 0.5 + 0.32 * Math.sin(A.t * 0.16);
+        const s1 = Math.sin(A.t * 0.16), s0 = Math.sin((A.t - 1) * 0.16);
+        if (s1 > 0.94 && s0 <= 0.94 && A.sceneCur === 'house') pushDoorRipple(0.4);
+      } else {
+        A.wanderer.knockArm *= 0.9;
+      }
       A.doorGlow += (A.doorGlowTarget - A.doorGlow) * 0.08;
       A.doorOpen += (A.doorOpenTarget - A.doorOpen) * 0.06;
       A.dawn += (A.dawnTarget - A.dawn) * 0.04;
@@ -996,7 +1065,11 @@ export default function ComeOverVisuals({
       if (A.sceneCur !== target) {
         if (A.veil < 0.05) A.transitionType = transitionRef.current;
         A.veil += (1 - A.veil) * 0.16;
-        if (A.veil > 0.92) A.sceneCur = target;
+        if (A.veil > 0.92) {
+          // walking in from the street starts fresh on each visit to the house
+          if (target === 'house') { A.houseApproach = 0; A.houseHurry = false; A.knockTimer = 0; }
+          A.sceneCur = target;
+        }
       } else {
         A.veil += (0 - A.veil) * 0.14;
       }

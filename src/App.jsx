@@ -148,7 +148,7 @@ export default function App() {
         <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-indigo-950 via-slate-950 to-black" />
 
         {/* --- Visualizer --- */}
-        <div className="relative z-10 h-[40%] w-full flex-shrink-0">
+        <div className="relative z-10 h-[32%] w-full flex-shrink-0">
           <ComeOverVisuals
             key={visualKey}
             isPlaying={isPlaying}
@@ -242,8 +242,8 @@ export default function App() {
         </motion.div>
 
         {/* --- Controls --- */}
-        <div className="relative z-20 flex-shrink-0 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2">
-          <div className="mx-auto mb-3 flex max-w-xs items-center gap-2">
+        <div className="relative z-20 flex-shrink-0 px-5 pb-[max(0.625rem,env(safe-area-inset-bottom))] pt-1">
+          <div className="mx-auto mb-1.5 flex max-w-xs items-center gap-2">
             <span className="w-9 text-right text-[11px] font-mono text-white/45">
               {String(lineIndex + 1).padStart(2, '0')}
             </span>
@@ -258,28 +258,28 @@ export default function App() {
           </div>
 
           <div className="flex justify-center">
-            <div className="flex items-center gap-3 rounded-full border border-white/10 bg-black/45 px-4 py-2.5 shadow-lg backdrop-blur-md">
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-3.5 py-1 shadow-lg backdrop-blur-md">
               <button type="button" onClick={previousLine} className="touch-target text-white/70 transition-colors hover:text-white" aria-label="Previous line">
-                <SkipBack size={22} />
+                <SkipBack size={19} />
               </button>
               <button type="button" onClick={() => setIsPlaying((p) => !p)} className="touch-target text-white transition-transform hover:scale-110" aria-label={isPlaying ? 'Pause' : 'Play'}>
-                {isPlaying ? <Pause size={30} /> : <Play size={30} />}
+                {isPlaying ? <Pause size={24} /> : <Play size={24} />}
               </button>
               <button type="button" onClick={nextLine} className="touch-target text-white/70 transition-colors hover:text-white" aria-label="Next line">
-                <SkipForward size={22} />
+                <SkipForward size={19} />
               </button>
               <button type="button" onClick={fullRestart} className="touch-target text-white/70 transition-colors hover:text-white" aria-label="Restart">
-                <RotateCcw size={20} />
+                <RotateCcw size={17} />
               </button>
-              <div className="mx-1 h-7 w-px bg-white/15" />
+              <div className="mx-1 h-6 w-px bg-white/15" />
               <div className="flex items-center gap-1.5">
-                <Music4 className="text-white/55" size={20} />
+                <Music4 className="text-white/55" size={17} />
                 <input
                   type="number"
                   value={bpm}
                   onChange={(e) => setBpm(e.target.value)}
                   onBlur={onBpmBlur}
-                  className="w-12 bg-transparent text-center font-mono text-base text-white focus:outline-none"
+                  className="w-10 bg-transparent text-center font-mono text-sm text-white focus:outline-none"
                   aria-label="Beats per minute"
                 />
                 <span className="text-[10px] font-medium uppercase tracking-wide text-white/40">bpm</span>
