@@ -18,6 +18,7 @@ const ALLOWED_SCENES = [
   'street', 'day', 'citywalk', 'room', 'train', 'rooftop',
   'house', 'neon', 'storm', 'boat', 'sunset', 'dawn',
   'phonebooth', 'memory', 'cliff', 'clocktower', 'bench', 'flashbeam',
+  'vigil', 'puddle', 'mirror',
 ];
 const EXTRA_WORD_CUES = ['beat', 'step', 'door-pulse'];
 

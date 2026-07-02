@@ -42,8 +42,8 @@ export const STORYBOARD = [
   // rap — knocking, blood, neon, smoke
   { scene: 'house', cue: 'knock', transition: 'light-wipe', intensity: 0.9, display: { breakAfter: [2] }, wordCues: { 0: 'knock', 2: 'knock' } }, // 20
   { scene: 'neon', cue: 'blood-pulse', transition: 'flash-cut', intensity: 0.8, wordCues: { 1: 'blood-pulse' } }, // 21
-  { scene: 'neon', cue: 'phone-check', transition: 'dissolve', intensity: 0.55 }, // 22
-  { scene: 'storm', cue: 'question', transition: 'rain-wipe', intensity: 0.6, display: { breakAfter: [4] } }, // 23
+  { scene: 'vigil', cue: 'phone-check', transition: 'dissolve', intensity: 0.55 }, // 22 — watching from across the road
+  { scene: 'puddle', cue: 'question', transition: 'rain-wipe', intensity: 0.6, display: { breakAfter: [4] } }, // 23 — asking his reflection
   { scene: 'rooftop', cue: 'ghost-trail', transition: 'dissolve', intensity: 0.6, display: { breakAfter: [2] } }, // 24
   { scene: 'flashbeam', cue: 'dust-beam', transition: 'light-wipe', intensity: 0.6, display: { breakAfter: [3] } }, // 25 — dust in the flashlight
   { scene: 'storm', cue: 'smoke', transition: 'rain-wipe', intensity: 0.65, display: { breakAfter: [3] } }, // 26
@@ -69,7 +69,7 @@ export const STORYBOARD = [
   { scene: 'storm', cue: 'hurt-storm', transition: 'rain-wipe', intensity: 0.75, display: { breakAfter: [3] } }, // 40
   { scene: 'sunset', cue: 'rescue-light', transition: 'warm-fade', intensity: 0.7, display: { breakAfter: [3] } }, // 41
   { scene: 'sunset', cue: 'page-turn', transition: 'warm-fade', intensity: 0.6, display: { breakAfter: [2] } }, // 42
-  { scene: 'sunset', cue: 'pain-fade', transition: 'warm-fade', intensity: 0.6, display: { breakAfter: [3] } }, // 43
+  { scene: 'mirror', cue: 'pain-fade', transition: 'warm-fade', intensity: 0.6, display: { breakAfter: [3] } }, // 43 — the fought self dissolving
   { scene: 'boat', cue: 'row-forward', transition: 'dissolve', intensity: 0.65, display: { breakAfter: [3] }, wordCues: { 5: 'row-forward', 6: 'row-forward' } }, // 44
   { scene: 'dawn', cue: 'final-open', transition: 'warm-fade', intensity: 1.0, display: { breakAfter: [4] } }, // 45
 ];

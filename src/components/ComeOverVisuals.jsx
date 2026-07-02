@@ -1237,12 +1237,136 @@ export default function ComeOverVisuals({
       }
     };
 
+
+    // "Just checkin' on your door" — watching her window from across the road
+    const sceneVigil = (playing) => {
+      const { w, h, groundY, px } = A.layout;
+      skyGrad('#101736', '#232c58', groundY);
+      moon(w * 0.4, h * 0.14, Math.max(8, h * 0.045));
+      stars(0.75);
+      litSkyline(groundY, 0.42, 'rgba(255,210,140,0.5)');
+      ctx.fillStyle = '#0c1124';
+      ctx.fillRect(0, groundY, w, h - groundY);
+      // her house, far across the road
+      const hw = w * 0.2, hh = h * 0.3, hx = w * 0.74, hy = groundY - hh;
+      ctx.fillStyle = '#232c50';
+      ctx.fillRect(hx, hy, hw, hh);
+      ctx.fillStyle = '#161d3c';
+      ctx.beginPath();
+      ctx.moveTo(hx - hw * 0.1, hy); ctx.lineTo(hx + hw * 0.5, hy - hh * 0.28); ctx.lineTo(hx + hw * 1.1, hy);
+      ctx.closePath(); ctx.fill();
+      // one warm window, breathing softly — someone is home
+      const flick2 = 0.75 + 0.25 * (0.5 + 0.5 * Math.sin(A.t * 0.03));
+      ctx.fillStyle = `rgba(255,206,120,${flick2})`;
+      ctx.fillRect(hx + hw * 0.58, hy + hh * 0.3, hw * 0.2, hh * 0.22);
+      // a dark door — he is not knocking tonight
+      ctx.fillStyle = '#141a36';
+      ctx.fillRect(hx + hw * 0.14, groundY - hh * 0.42, hw * 0.22, hh * 0.42);
+      wetGlow(hx + hw * 0.68, groundY, hw * 0.3, h - groundY, 'rgba(255,206,120,', 0.16, 7);
+      // the road between them
+      ctx.fillStyle = 'rgba(210,220,255,0.12)';
+      for (let x = w * 0.06; x < w * 0.94; x += px * 5) ctx.fillRect(x, groundY + px * 2.4, px * 2.6, px * 0.7);
+      // him, way over here under the lamp, just watching
+      const lx = w * 0.16, lampY = groundY - h * 0.32;
+      const fl = 0.86 + 0.14 * (0.5 + 0.5 * Math.sin(A.t * 0.19));
+      ctx.fillStyle = '#0a1024';
+      ctx.fillRect(lx - px * 0.4, lampY, px * 0.8, h * 0.32);
+      const cone = ctx.createLinearGradient(lx, lampY, lx, groundY);
+      cone.addColorStop(0, `rgba(255,219,150,${0.4 * fl})`);
+      cone.addColorStop(1, 'rgba(255,219,150,0)');
+      ctx.fillStyle = cone;
+      ctx.beginPath();
+      ctx.moveTo(lx - px, lampY); ctx.lineTo(lx - px * 5.5, groundY); ctx.lineTo(lx + px * 5.5, groundY); ctx.lineTo(lx + px, lampY);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = `rgba(255,240,200,${0.7 + 0.3 * fl})`;
+      ctx.fillRect(lx - px, lampY - px, px * 2, px * 1.6);
+      wetGlow(lx, groundY, px * 8, h - groundY, 'rgba(255,219,150,', 0.18 * fl, 8);
+      idol(lx + px * 3, groundY, px, { look: 1 });
+      rain(0.5, playing);
+    };
+
+    // "what the hell am I doin' this for?" — questioning his own reflection
+    const scenePuddle = (playing) => {
+      const { w, h, groundY, px } = A.layout;
+      skyGrad('#0d1226', '#1c2244', groundY);
+      stars(0.4);
+      litSkyline(groundY, 0.45, 'rgba(200,190,150,0.4)');
+      ctx.fillStyle = '#0b0f20';
+      ctx.fillRect(0, groundY, w, h - groundY);
+      const standX = w * 0.45;
+      const puX = w * 0.52, puY = groundY + (h - groundY) * 0.45;
+      const puRx = w * 0.21, puRy = (h - groundY) * 0.32;
+      // still water
+      const pg = ctx.createLinearGradient(0, puY - puRy, 0, puY + puRy);
+      pg.addColorStop(0, '#1b2b55'); pg.addColorStop(1, '#0e1530');
+      ctx.fillStyle = pg;
+      ctx.beginPath(); ctx.ellipse(puX, puY, puRx, puRy, 0, 0, TAU); ctx.fill();
+      // his upside-down self, wavering in the water
+      ctx.save();
+      ctx.beginPath(); ctx.ellipse(puX, puY, puRx * 0.96, puRy * 0.92, 0, 0, TAU); ctx.clip();
+      ctx.translate(Math.sin(A.t * 0.05) * px * 0.4, 0);
+      ctx.translate(0, 2 * groundY);
+      ctx.scale(1, -1);
+      ctx.globalAlpha = 0.32;
+      idol(standX, groundY, px, {});
+      ctx.restore();
+      // raindrop rings on the surface
+      for (let i = 0; i < 3; i += 1) {
+        const ph = ((A.t * 0.012) + i / 3) % 1;
+        ctx.strokeStyle = `rgba(180,200,240,${(1 - ph) * 0.3})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(
+          puX + Math.sin(i * 9) * puRx * 0.4,
+          puY + Math.cos(i * 7) * puRy * 0.3,
+          puRx * 0.5 * ph, puRy * 0.5 * ph, 0, 0, TAU,
+        );
+        ctx.stroke();
+      }
+      // him at the water's edge, head down over the question
+      idol(standX, groundY, px, {});
+      rain(0.7, playing);
+    };
+
+    // "매일 나와 싸운 이유인지" — the self he fought, finally dissolving
+    const sceneMirror = (playing) => {
+      const { w, h, groundY, px } = A.layout;
+      const g = ctx.createLinearGradient(0, 0, 0, groundY);
+      g.addColorStop(0, '#432a5e'); g.addColorStop(0.65, '#c96a52'); g.addColorStop(1, '#f0a95e');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, groundY);
+      sun(w * 0.5, groundY - h * 0.06, Math.max(10, h * 0.05), '#ffd98f');
+      ctx.fillStyle = '#241322';
+      ctx.fillRect(0, groundY, w, h - groundY);
+      // him, facing what is left of the fight
+      idol(w * 0.36, groundY, px, { look: 1 });
+      // the other self: mirrored, dark, already thinning
+      const sx = w * 0.64;
+      const fade = 0.45 + 0.12 * Math.sin(A.t * 0.03);
+      ctx.save();
+      ctx.translate(sx * 2, 0);
+      ctx.scale(-1, 1);
+      ctx.globalAlpha = fade;
+      ctx.filter = 'brightness(0.3) saturate(0.4)';
+      idol(sx, groundY, px, { look: 1 });
+      ctx.restore();
+      // he breaks up into embers drifting off on the evening air
+      for (let i = 0; i < 10; i += 1) {
+        const ph = ((A.t * 0.005) + i / 10) % 1;
+        const ex = sx + Math.sin(i * 3.3) * px * 3 + ph * px * 6;
+        const ey = groundY - px * (2 + ((i * 17) % 8)) - ph * px * 7;
+        ctx.fillStyle = `rgba(64,38,54,${(1 - ph) * 0.7})`;
+        ctx.fillRect(ex, ey, px * 0.7, px * 0.7);
+      }
+    };
+
     const SCENES = {
       street: sceneStreet, day: sceneDay, citywalk: sceneCitywalk, room: sceneRoom,
       train: sceneTrain, rooftop: sceneRooftop, house: sceneHouse, neon: sceneNeon,
       storm: sceneStorm, boat: sceneBoat, sunset: sceneSunset, dawn: sceneDawn,
       phonebooth: scenePhonebooth, memory: sceneMemory, cliff: sceneCliff,
       clocktower: sceneClocktower, bench: sceneBench, flashbeam: sceneFlashbeam,
+      vigil: sceneVigil, puddle: scenePuddle, mirror: sceneMirror,
     };
     const WALK_SCENES = { street: 1, citywalk: 1, neon: 1, train: 1 };
     const DRIFT_CUES = { 'lost-drift': 1, 'lost-echo': 1, 'ghost-trail': 1, 'cliff-wind': 1 };
