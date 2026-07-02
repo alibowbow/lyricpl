@@ -49,12 +49,12 @@ export const STORYBOARD = [
   { scene: 'storm', cue: 'smoke', transition: 'rain-wipe', intensity: 0.65, display: { breakAfter: [3] } }, // 26
   { scene: 'storm', cue: 'metaphor-distort', transition: 'flash-cut', intensity: 0.6 }, // 27
 
-  // chorus 3 — on a night train, reflecting, heading back
+  // chorus 3 — the journey back: booth, train, bridge, taxi, hillside steps
   { scene: 'phonebooth', cue: 'phone-glow', transition: 'dissolve', intensity: 0.5, display: { breakAfter: [4] } }, // 28 — calling from the booth
   { scene: 'train', cue: 'lost-drift', transition: 'dissolve', intensity: 0.5 }, // 29
-  { scene: 'train', cue: 'lost-echo', transition: 'dissolve', intensity: 0.55 }, // 30
-  { scene: 'train', cue: 'apology-reflection', transition: 'warm-fade', intensity: 0.55, display: { breakAfter: [5] } }, // 31
-  { scene: 'train', cue: 'return-route', transition: 'light-wipe', intensity: 0.55 }, // 32
+  { scene: 'bridge', cue: 'lost-echo', transition: 'dissolve', intensity: 0.55 }, // 30 — crossing the river to her side
+  { scene: 'taxi', cue: 'apology-reflection', transition: 'warm-fade', intensity: 0.55, display: { breakAfter: [5] } }, // 31 — bowed in the back seat
+  { scene: 'stairs', cue: 'return-route', transition: 'light-wipe', intensity: 0.55 }, // 32 — climbing to her neighbourhood
   { scene: 'house', cue: 'approach-door', transition: 'light-wipe', intensity: 0.65 }, // 33
 
   // post-chorus 2 — back at the door

@@ -1900,6 +1900,176 @@ export default function ComeOverVisuals({
       rain(0.4, playing);
     };
 
+
+    // crossing the river bridge — every step closer to her side of the city
+    const sceneBridge = (playing) => {
+      const { w, h, groundY, px, figW } = A.layout;
+      skyGrad('#101a40', '#263468', groundY);
+      moon(w * 0.2, h * 0.13, Math.max(8, h * 0.045));
+      stars(0.85);
+      litSkyline(groundY - px * 1.5, 0.35, 'rgba(255,210,140,0.45)');
+      // the river below the deck, carrying the city lights
+      ctx.fillStyle = '#0a1228';
+      ctx.fillRect(0, groundY, w, h - groundY);
+      for (let i = 0; i < 6; i += 1) {
+        const rx3 = w * (0.08 + i * 0.16);
+        const warm = i % 2 === 0;
+        ctx.fillStyle = warm ? 'rgba(255,206,130,0.14)' : 'rgba(170,200,255,0.12)';
+        for (let y2 = groundY + px; y2 < h; y2 += px * 2) {
+          const ww2 = px * (0.8 + 1.6 * Math.abs(Math.sin(y2 * 0.22 + A.t * 0.045 + i)));
+          ctx.fillRect(rx3 - ww2 / 2, y2, ww2, px * 0.7);
+        }
+      }
+      // towers, main cable and hangers
+      const t1 = w * 0.22, t2 = w * 0.78, topY2 = groundY - h * 0.46;
+      ctx.fillStyle = '#141c3c';
+      ctx.fillRect(t1 - px, topY2, px * 2, groundY - topY2);
+      ctx.fillRect(t2 - px, topY2, px * 2, groundY - topY2);
+      ctx.strokeStyle = '#1b2648'; ctx.lineWidth = Math.max(1.5, px * 0.4);
+      ctx.beginPath();
+      ctx.moveTo(0, groundY - h * 0.3);
+      ctx.quadraticCurveTo(w * 0.1, groundY - h * 0.42, t1, topY2);
+      ctx.quadraticCurveTo(w * 0.5, groundY - px * 3.5, t2, topY2);
+      ctx.quadraticCurveTo(w * 0.9, groundY - h * 0.42, w, groundY - h * 0.3);
+      ctx.stroke();
+      ctx.lineWidth = Math.max(1, px * 0.2);
+      for (let t3 = 0.12; t3 < 0.95; t3 += 0.12) {
+        const qx = (1 - t3) * (1 - t3) * t1 + 2 * (1 - t3) * t3 * (w * 0.5) + t3 * t3 * t2;
+        const qy = (1 - t3) * (1 - t3) * topY2 + 2 * (1 - t3) * t3 * (groundY - px * 3.5) + t3 * t3 * topY2;
+        ctx.beginPath(); ctx.moveTo(qx, qy); ctx.lineTo(qx, groundY - px * 1.2); ctx.stroke();
+      }
+      // deck + railing
+      ctx.fillStyle = '#12193a';
+      ctx.fillRect(0, groundY - px * 1.2, w, px * 1.6);
+      ctx.strokeStyle = '#1b2648'; ctx.lineWidth = Math.max(1, px * 0.25);
+      ctx.beginPath(); ctx.moveTo(0, groundY - px * 4.2); ctx.lineTo(w, groundY - px * 4.2); ctx.stroke();
+      for (let rx4 = px * 2; rx4 < w; rx4 += px * 5) {
+        ctx.beginPath(); ctx.moveTo(rx4, groundY - px * 4.2); ctx.lineTo(rx4, groundY - px * 1.2); ctx.stroke();
+      }
+      if (playing) { A.wanderer.x += Math.max(0.45, w * 0.0016); A.wanderer.walk += 0.115; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
+      idol(A.wanderer.x, groundY - px * 1.2, px, { walk: A.wanderer.walk });
+      rain(0.4, playing);
+    };
+
+    // the taxi back seat — head bowed, city light streaming past the glass
+    const sceneTaxi = (playing) => {
+      const { w, h, groundY, px } = A.layout;
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, '#0b0f22'); g.addColorStop(1, '#10142c');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      // the side window and the night flowing past it
+      const wx2 = w * 0.3, wy2 = h * 0.12, ww3 = w * 0.62, wh3 = h * 0.46;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(wx2, wy2, ww3, wh3); ctx.clip();
+      const sg2 = ctx.createLinearGradient(0, wy2, 0, wy2 + wh3);
+      sg2.addColorStop(0, '#101c42'); sg2.addColorStop(1, '#1c2650');
+      ctx.fillStyle = sg2;
+      ctx.fillRect(wx2, wy2, ww3, wh3);
+      for (let i = 0; i < 9; i += 1) {
+        const sp = 4 + (i % 3) * 1.6;
+        const lx = wx2 + ww3 - (((i * 71 + A.t * sp) % (ww3 + 60)) - 30);
+        const cols3 = ['255,214,140', '170,200,255', '255,170,150'];
+        const tg2 = ctx.createLinearGradient(lx, 0, lx + px * 8, 0);
+        tg2.addColorStop(0, `rgba(${cols3[i % 3]},${0.35 + (i % 2) * 0.2})`);
+        tg2.addColorStop(1, `rgba(${cols3[i % 3]},0)`);
+        ctx.fillStyle = tg2;
+        ctx.fillRect(lx, wy2 + wh3 * (0.18 + ((i * 37) % 55) / 100), px * 8, px * 0.9);
+      }
+      // his faint double in the glass
+      ctx.globalAlpha = 0.14;
+      idolSit(w * 0.62, h * 0.66, px * 0.95, {});
+      ctx.globalAlpha = 1;
+      // rain streaking back across the glass
+      ctx.strokeStyle = 'rgba(200,220,255,0.22)'; ctx.lineWidth = Math.max(1, px * 0.2);
+      for (let i = 0; i < 8; i += 1) {
+        const dph = ((A.t * 0.012) + i / 8) % 1;
+        const dx3 = wx2 + ww3 - dph * ww3;
+        const dy3 = wy2 + ((i * 53) % (wh3 * 0.8 | 0 || 1));
+        ctx.beginPath(); ctx.moveTo(dx3, dy3); ctx.lineTo(dx3 + px * 3, dy3 + px * 1.1); ctx.stroke();
+      }
+      ctx.restore();
+      // frame, door panel, handle
+      ctx.strokeStyle = '#1c2444'; ctx.lineWidth = Math.max(2, px * 0.7);
+      ctx.strokeRect(wx2, wy2, ww3, wh3);
+      ctx.fillStyle = '#131a36';
+      ctx.fillRect(0, wy2 + wh3, w, h - wy2 - wh3);
+      ctx.fillStyle = '#1a2242';
+      ctx.fillRect(wx2 + px, wy2 + wh3 + px * 2, px * 6, px * 1);
+      // a little charm swinging from the frame
+      const chA = Math.sin(A.t * 0.03) * 0.25;
+      ctx.strokeStyle = '#22305a'; ctx.lineWidth = Math.max(1, px * 0.2);
+      ctx.beginPath();
+      ctx.moveTo(wx2 + ww3 * 0.5, wy2);
+      ctx.lineTo(wx2 + ww3 * 0.5 + Math.sin(chA) * px * 2.4, wy2 + Math.cos(chA) * px * 2.4);
+      ctx.stroke();
+      ctx.fillStyle = '#c9a06a';
+      ctx.fillRect(wx2 + ww3 * 0.5 + Math.sin(chA) * px * 2.4 - px * 0.5, wy2 + Math.cos(chA) * px * 2.4, px, px);
+      // the meter's small amber glow
+      const mg = ctx.createRadialGradient(w * 0.09, h * 0.8, 0, w * 0.09, h * 0.8, px * 5);
+      mg.addColorStop(0, 'rgba(255,190,90,0.35)');
+      mg.addColorStop(1, 'rgba(255,190,90,0)');
+      ctx.fillStyle = mg;
+      ctx.fillRect(w * 0.09 - px * 5, h * 0.8 - px * 5, px * 10, px * 10);
+      ctx.fillStyle = 'rgba(255,206,110,0.85)';
+      ctx.fillRect(w * 0.09 - px * 1.2, h * 0.8 - px * 0.7, px * 2.4, px * 1.4);
+      // him in the back seat, folded into himself
+      ctx.fillStyle = '#171f3e';
+      ctx.fillRect(w * 0.24, h * 0.72, px * 12, px * 2);
+      idolSit(w * 0.4, h * 0.7, px, {});
+    };
+
+    // the hillside steps up to her neighbourhood — the last stretch home
+    const sceneStairs = (playing) => {
+      const { w, h, groundY, px, figW } = A.layout;
+      skyGrad('#111a3e', '#2a3161', h * 0.9);
+      moon(w * 0.82, h * 0.12, Math.max(8, h * 0.045));
+      stars(0.8);
+      // terraced flight climbing to the right
+      const x0 = w * 0.06, y0 = groundY + px * 2;
+      const stepRun = px * 4.6, stepRise = px * 1.9, steps = 12;
+      // small hillside homes above the flight
+      [[0.3, 4.5], [0.52, 7], [0.74, 9.5]].forEach(([fx3, lift]) => {
+        const hx3 = w * fx3, hy3 = y0 - lift * stepRise - px * 5.5;
+        ctx.fillStyle = '#151d3c';
+        ctx.fillRect(hx3, hy3, px * 7, px * 5);
+        ctx.fillStyle = '#0f1631';
+        ctx.beginPath();
+        ctx.moveTo(hx3 - px * 0.7, hy3); ctx.lineTo(hx3 + px * 3.5, hy3 - px * 2.2); ctx.lineTo(hx3 + px * 7.7, hy3);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(255,206,130,0.75)';
+        ctx.fillRect(hx3 + px * 1.4, hy3 + px * 1.6, px * 1.5, px * 1.5);
+      });
+      // the steps themselves
+      ctx.fillStyle = '#171f3e';
+      for (let i = 0; i <= steps; i += 1) {
+        const sx3 = x0 + i * stepRun, sy3 = y0 - i * stepRise;
+        ctx.fillRect(sx3, sy3, w - sx3 + px, h - sy3);
+      }
+      // step lips catching the lamplight
+      ctx.fillStyle = 'rgba(200,214,255,0.07)';
+      for (let i = 0; i <= steps; i += 1) {
+        ctx.fillRect(x0 + i * stepRun, y0 - i * stepRise, stepRun, px * 0.5);
+      }
+      // one lamp half-way up
+      const lpx = x0 + 6.5 * stepRun, lpTop = y0 - 6 * stepRise - px * 9;
+      const fl2 = 0.86 + 0.14 * Math.sin(A.t * 0.16);
+      ctx.fillStyle = '#0a1024';
+      ctx.fillRect(lpx - px * 0.35, lpTop, px * 0.7, y0 - 6 * stepRise - lpTop);
+      ctx.fillStyle = `rgba(255,240,200,${0.65 + 0.35 * fl2})`;
+      ctx.fillRect(lpx - px, lpTop - px, px * 2, px * 1.4);
+      const lg5 = ctx.createRadialGradient(lpx, lpTop, 0, lpx, lpTop, px * 10);
+      lg5.addColorStop(0, `rgba(255,219,150,${0.3 * fl2})`);
+      lg5.addColorStop(1, 'rgba(255,219,150,0)');
+      ctx.fillStyle = lg5;
+      ctx.fillRect(lpx - px * 10, lpTop - px * 4, px * 20, px * 18);
+      // he climbs, one landing at a time
+      if (playing) { A.wanderer.x += Math.max(0.4, w * 0.0014); A.wanderer.walk += 0.11; if (A.wanderer.x > w * 0.86) A.wanderer.x = w * 0.02; }
+      const k = Math.max(0, Math.min(steps, Math.floor((A.wanderer.x - x0) / stepRun)));
+      idol(A.wanderer.x, y0 - k * stepRise, px, { walk: A.wanderer.walk });
+      rain(0.3, playing);
+    };
+
     const SCENES = {
       street: sceneStreet, day: sceneDay, citywalk: sceneCitywalk, room: sceneRoom,
       train: sceneTrain, rooftop: sceneRooftop, house: sceneHouse, neon: sceneNeon,
@@ -1909,8 +2079,9 @@ export default function ComeOverVisuals({
       vigil: sceneVigil, puddle: scenePuddle, mirror: sceneMirror,
       crossroad: sceneCrossroad, overpass: sceneOverpass, platform: scenePlatform, window: sceneWindow,
       alley: sceneAlley, busstop: sceneBusstop, store: sceneStore,
+      bridge: sceneBridge, taxi: sceneTaxi, stairs: sceneStairs,
     };
-    const WALK_SCENES = { street: 1, citywalk: 1, neon: 1, alley: 1 };
+    const WALK_SCENES = { street: 1, citywalk: 1, neon: 1, alley: 1, bridge: 1 };
     const DRIFT_CUES = { 'lost-drift': 1, 'lost-echo': 1, 'ghost-trail': 1, 'cliff-wind': 1 };
     // how each lyric moment reads on the character's face
     const MOOD_BY_CUE = {
