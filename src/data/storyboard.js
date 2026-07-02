@@ -14,9 +14,9 @@ export const STORYBOARD = [
   // chorus 1 — empty rainy night, calling out, lost
   { scene: 'street', cue: 'night-fall', transition: 'warm-fade', intensity: 0.5, display: { breakAfter: [4] } }, // 0
   { scene: 'street', cue: 'lost-drift', transition: 'dissolve', intensity: 0.5 }, // 1
-  { scene: 'street', cue: 'lost-echo', transition: 'dissolve', intensity: 0.55 }, // 2
+  { scene: 'crossroad', cue: 'lost-echo', transition: 'dissolve', intensity: 0.55 }, // 2 — the fork with no answer
   { scene: 'room', cue: 'apology', transition: 'warm-fade', intensity: 0.55, display: { breakAfter: [5] } }, // 3
-  { scene: 'street', cue: 'lost-drift', transition: 'dissolve', intensity: 0.5 }, // 4
+  { scene: 'overpass', cue: 'lost-drift', transition: 'dissolve', intensity: 0.5 }, // 4 — traffic streaming below
   { scene: 'street', cue: 'approach-door', transition: 'light-wipe', intensity: 0.6 }, // 5
 
   // verse 1 — alone, phone glow, time passed, burying memories
@@ -28,8 +28,8 @@ export const STORYBOARD = [
   // chorus 2 — out walking the city
   { scene: 'citywalk', cue: 'night-fall', transition: 'dissolve', intensity: 0.5, display: { breakAfter: [4] } }, // 10
   { scene: 'citywalk', cue: 'lost-drift', transition: 'dissolve', intensity: 0.5 }, // 11
-  { scene: 'citywalk', cue: 'lost-echo', transition: 'dissolve', intensity: 0.55 }, // 12
-  { scene: 'room', cue: 'apology', transition: 'warm-fade', intensity: 0.55, display: { breakAfter: [5] } }, // 13
+  { scene: 'platform', cue: 'lost-echo', transition: 'dissolve', intensity: 0.55 }, // 12 — the express passes him by
+  { scene: 'window', cue: 'apology', transition: 'warm-fade', intensity: 0.55, display: { breakAfter: [5] } }, // 13 — rain down the glass
   { scene: 'house', cue: 'approach-door', transition: 'light-wipe', intensity: 0.65 }, // 14
   { scene: 'house', cue: 'arrive-door', transition: 'light-wipe', intensity: 0.7 }, // 15
 

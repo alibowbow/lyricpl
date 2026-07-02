@@ -1419,6 +1419,202 @@ export default function ComeOverVisuals({
       }
     };
 
+
+    // "I'm lost" — a fork in the night road, and no sign says which way
+    const sceneCrossroad = (playing) => {
+      const { w, h, groundY, px } = A.layout;
+      skyGrad('#111a3e', '#283260', groundY);
+      moon(w * 0.8, h * 0.16, Math.max(9, h * 0.05));
+      stars(0.8);
+      litSkyline(groundY, 0.4, 'rgba(255,210,140,0.45)');
+      ctx.fillStyle = '#0d1226';
+      ctx.fillRect(0, groundY, w, h - groundY);
+      // two pale roads diverging from the fork
+      const fx = w * 0.5, fy = groundY + (h - groundY) * 0.6;
+      ctx.fillStyle = '#222b4a';
+      ctx.beginPath();
+      ctx.moveTo(fx - px * 1.5, fy);
+      ctx.lineTo(w * 0.02, groundY + px * 1.6);
+      ctx.lineTo(w * 0.17, groundY + px * 0.4);
+      ctx.lineTo(fx + px * 0.5, fy - px * 3.2);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(fx + px * 1.5, fy);
+      ctx.lineTo(w * 0.98, groundY + px * 1.6);
+      ctx.lineTo(w * 0.83, groundY + px * 0.4);
+      ctx.lineTo(fx - px * 0.5, fy - px * 3.2);
+      ctx.closePath(); ctx.fill();
+      // signpost with two blank arrows, pointing apart
+      const sx2 = fx + px * 5, spTop = groundY - px * 9;
+      ctx.fillStyle = '#0a1024';
+      ctx.fillRect(sx2 - px * 0.35, spTop, px * 0.7, groundY - spTop);
+      ctx.fillStyle = '#233054';
+      ctx.beginPath();
+      ctx.moveTo(sx2 - px * 4.4, spTop + px * 1.1);
+      ctx.lineTo(sx2 - px * 5.5, spTop + px * 1.85);
+      ctx.lineTo(sx2 - px * 4.4, spTop + px * 2.6);
+      ctx.lineTo(sx2 + px * 0.45, spTop + px * 2.6);
+      ctx.lineTo(sx2 + px * 0.45, spTop + px * 1.1);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(sx2 + px * 4.4, spTop + px * 3.3);
+      ctx.lineTo(sx2 + px * 5.5, spTop + px * 4.05);
+      ctx.lineTo(sx2 + px * 4.4, spTop + px * 4.8);
+      ctx.lineTo(sx2 - px * 0.45, spTop + px * 4.8);
+      ctx.lineTo(sx2 - px * 0.45, spTop + px * 3.3);
+      ctx.closePath(); ctx.fill();
+      // him at the fork, unable to choose
+      idol(fx - px * 5, groundY, px, {});
+      rain(0.45, playing);
+    };
+
+    // lost in the city flow — car-light trails stream under the overpass
+    const sceneOverpass = (playing) => {
+      const { w, h, groundY, px } = A.layout;
+      skyGrad('#101836', '#242e5c', h * 0.55);
+      moon(w * 0.18, h * 0.13, Math.max(8, h * 0.045));
+      stars(0.8);
+      litSkyline(h * 0.55, 0.5, 'rgba(255,210,140,0.5)');
+      // the road below, seen past the railing
+      ctx.fillStyle = '#0a0e20';
+      ctx.fillRect(0, h * 0.55, w, groundY - h * 0.55);
+      const laneY1 = h * 0.6, laneY2 = h * 0.665;
+      for (let i = 0; i < 7; i += 1) {
+        const sp = 9 + (i % 3) * 3;
+        const lx = ((i * 83 + A.t * sp) % (w + 120)) - 60;
+        const tg = ctx.createLinearGradient(lx - px * 10, 0, lx + px * 2, 0);
+        tg.addColorStop(0, 'rgba(255,236,180,0)');
+        tg.addColorStop(1, 'rgba(255,236,180,0.85)');
+        ctx.fillStyle = tg;
+        ctx.fillRect(lx - px * 10, laneY1 + (i % 2) * px * 1.4, px * 12, px * 0.8);
+      }
+      for (let i = 0; i < 7; i += 1) {
+        const sp = 8 + (i % 3) * 3;
+        const lx = w - (((i * 97 + A.t * sp) % (w + 120)) - 60);
+        const tg = ctx.createLinearGradient(lx + px * 12, 0, lx, 0);
+        tg.addColorStop(0, 'rgba(255,90,90,0)');
+        tg.addColorStop(1, 'rgba(255,90,90,0.8)');
+        ctx.fillStyle = tg;
+        ctx.fillRect(lx, laneY2 + (i % 2) * px * 1.4, px * 12, px * 0.8);
+      }
+      // the walkway deck
+      ctx.fillStyle = '#141b38';
+      ctx.fillRect(0, groundY, w, px * 3);
+      ctx.fillStyle = '#0c1228';
+      ctx.fillRect(0, groundY + px * 3, w, h - groundY - px * 3);
+      // him on the bridge
+      idol(w * 0.42, groundY, px, {});
+      // railing in front of him for depth
+      ctx.strokeStyle = '#1c2648'; ctx.lineWidth = Math.max(2, px * 0.5);
+      ctx.beginPath(); ctx.moveTo(0, groundY - px * 4.5); ctx.lineTo(w, groundY - px * 4.5); ctx.stroke();
+      ctx.lineWidth = Math.max(1.5, px * 0.35);
+      for (let x = px; x < w; x += px * 4) {
+        ctx.beginPath(); ctx.moveTo(x, groundY - px * 4.5); ctx.lineTo(x, groundY + px * 0.5); ctx.stroke();
+      }
+      rain(0.4, playing);
+    };
+
+    // the late express blasts through the empty platform without stopping
+    const scenePlatform = (playing) => {
+      const { w, h, groundY, px } = A.layout;
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, '#0d1226'); g.addColorStop(1, '#141a34');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      // ceiling + humming lamps
+      ctx.fillStyle = '#0a0e20';
+      ctx.fillRect(0, 0, w, h * 0.14);
+      for (let i = 0; i < 3; i += 1) {
+        const lx = w * (0.2 + i * 0.3);
+        const flick = 0.8 + 0.2 * Math.sin(A.t * 0.11 + i * 5);
+        ctx.fillStyle = '#0a0e20';
+        ctx.fillRect(lx - px * 0.3, h * 0.14, px * 0.6, px * 2);
+        ctx.fillStyle = `rgba(235,240,255,${0.75 * flick})`;
+        ctx.fillRect(lx - px * 2, h * 0.14 + px * 2, px * 4, px * 0.8);
+        const cone = ctx.createLinearGradient(lx, h * 0.14, lx, groundY);
+        cone.addColorStop(0, `rgba(220,230,255,${0.1 * flick})`);
+        cone.addColorStop(1, 'rgba(220,230,255,0)');
+        ctx.fillStyle = cone;
+        ctx.fillRect(lx - px * 5, h * 0.14, px * 10, groundY - h * 0.14);
+      }
+      // the express: a horizontal blur of window light
+      const bandTop = groundY - px * 9.5, bandH = px * 7;
+      ctx.fillStyle = '#0e1430';
+      ctx.fillRect(0, bandTop, w, bandH);
+      for (let i = 0; i < 18; i += 1) {
+        const lx = ((i * 61 + A.t * 26) % (w + 90)) - 45;
+        ctx.fillStyle = `rgba(${i % 3 ? '255,224,160' : '180,210,255'},${0.5 + (i % 2) * 0.3})`;
+        ctx.fillRect(lx, bandTop + px * 1.2 + (i % 3) * px * 1.7, px * (5 + (i % 3) * 3), px * 1.1);
+      }
+      ctx.fillStyle = `rgba(210,225,255,${0.05 + 0.04 * Math.sin(A.t * 0.6)})`;
+      ctx.fillRect(0, bandTop, w, bandH);
+      // platform edge + safety line
+      ctx.fillStyle = '#161d3a';
+      ctx.fillRect(0, groundY, w, h - groundY);
+      ctx.fillStyle = 'rgba(250,210,110,0.7)';
+      ctx.fillRect(0, groundY + px * 0.8, w, px * 0.7);
+      // him alone behind the line
+      idol(w * 0.36, groundY, px, {});
+    };
+
+    // "이런 내가 너무 싫어" — rain tracing down the glass over city bokeh
+    const sceneWindow = (playing) => {
+      const { w, h, groundY, px } = A.layout;
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, '#0e1226'); g.addColorStop(1, '#131730');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      const wx = w * 0.3, wy = h * 0.1, ww = w * 0.62, wh = h * 0.58;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(wx, wy, ww, wh); ctx.clip();
+      const sg = ctx.createLinearGradient(0, wy, 0, wy + wh);
+      sg.addColorStop(0, '#131c40'); sg.addColorStop(1, '#232b52');
+      ctx.fillStyle = sg;
+      ctx.fillRect(wx, wy, ww, wh);
+      // out-of-focus city lights
+      for (let i = 0; i < 12; i += 1) {
+        const bx = wx + ((i * 73) % ww);
+        const by = wy + wh * (0.45 + ((i * 37) % 50) / 100);
+        const r = px * (1 + (i % 3));
+        const bok = ctx.createRadialGradient(bx, by, 0, bx, by, r * 2.4);
+        const col = i % 4 === 0 ? '255,170,150' : '255,214,140';
+        bok.addColorStop(0, `rgba(${col},0.5)`);
+        bok.addColorStop(1, `rgba(${col},0)`);
+        ctx.fillStyle = bok;
+        ctx.beginPath(); ctx.arc(bx, by, r * 2.4, 0, TAU); ctx.fill();
+      }
+      // droplets trickling down the pane
+      for (let i = 0; i < 10; i += 1) {
+        const ph = ((A.t * (0.002 + (i % 4) * 0.0012)) + i / 10) % 1;
+        const dx2 = wx + ((i * 89) % ww) + Math.sin(ph * 9 + i) * px * 0.5;
+        const dy2 = wy + ph * wh;
+        ctx.strokeStyle = 'rgba(200,220,255,0.28)';
+        ctx.lineWidth = Math.max(1, px * 0.22);
+        ctx.beginPath(); ctx.moveTo(dx2, dy2 - px * 4); ctx.lineTo(dx2, dy2); ctx.stroke();
+        ctx.fillStyle = 'rgba(220,235,255,0.6)';
+        ctx.beginPath(); ctx.arc(dx2, dy2, px * 0.35, 0, TAU); ctx.fill();
+      }
+      ctx.restore();
+      ctx.strokeStyle = '#2a3354'; ctx.lineWidth = Math.max(2, px * 0.7);
+      ctx.strokeRect(wx, wy, ww, wh);
+      ctx.beginPath(); ctx.moveTo(wx + ww / 2, wy); ctx.lineTo(wx + ww / 2, wy + wh); ctx.stroke();
+      ctx.fillStyle = '#0c1124';
+      ctx.fillRect(0, groundY, w, h - groundY);
+      // a small lamp keeps the room barely warm
+      const lx2 = w * 0.12;
+      const lg2 = ctx.createRadialGradient(lx2, groundY - px * 6, 0, lx2, groundY - px * 6, px * 8);
+      lg2.addColorStop(0, 'rgba(255,206,130,0.3)');
+      lg2.addColorStop(1, 'rgba(255,206,130,0)');
+      ctx.fillStyle = lg2;
+      ctx.fillRect(lx2 - px * 8, groundY - px * 14, px * 16, px * 16);
+      ctx.fillStyle = '#c9a06a';
+      ctx.fillRect(lx2 - px * 1.2, groundY - px * 7.2, px * 2.4, px * 1.4);
+      ctx.fillStyle = '#0a1024';
+      ctx.fillRect(lx2 - px * 0.3, groundY - px * 5.8, px * 0.6, px * 5.8);
+      // him at the glass
+      idol(w * 0.52, groundY, px, { look: 1 });
+    };
+
     const SCENES = {
       street: sceneStreet, day: sceneDay, citywalk: sceneCitywalk, room: sceneRoom,
       train: sceneTrain, rooftop: sceneRooftop, house: sceneHouse, neon: sceneNeon,
@@ -1426,6 +1622,7 @@ export default function ComeOverVisuals({
       phonebooth: scenePhonebooth, memory: sceneMemory, cliff: sceneCliff,
       clocktower: sceneClocktower, bench: sceneBench, flashbeam: sceneFlashbeam,
       vigil: sceneVigil, puddle: scenePuddle, mirror: sceneMirror,
+      crossroad: sceneCrossroad, overpass: sceneOverpass, platform: scenePlatform, window: sceneWindow,
     };
     const WALK_SCENES = { street: 1, citywalk: 1, neon: 1, train: 1 };
     const DRIFT_CUES = { 'lost-drift': 1, 'lost-echo': 1, 'ghost-trail': 1, 'cliff-wind': 1 };
