@@ -579,7 +579,7 @@ export default function ComeOverVisuals({
       ctx.fillStyle = '#0a1126';
       ctx.fillRect(w * 0.08, wy, w * 0.84, wh);
       for (let i = 0; i < 26; i++) {
-        const sp = i % 2 ? 6.5 : 3.2; // near lights streak past faster than far ones
+        const sp = i % 2 ? 4.2 : 2.2; // near lights streak past faster than far ones
         const x = w * 0.08 + ((i * 53 + A.t * sp) % (w * 0.84));
         ctx.fillStyle = `rgba(${i % 3 ? 255 : 150},${i % 2 ? 210 : 230},${i % 3 ? 150 : 255},0.8)`;
         ctx.fillRect(x, wy + (wh * 0.3) + ((i * 31) % (wh * 0.5)), px, px * (1 + (i % 3)));
@@ -1008,7 +1008,7 @@ export default function ComeOverVisuals({
       ctx.strokeStyle = 'rgba(200,215,245,0.14)'; ctx.lineWidth = 1;
       ctx.beginPath();
       for (let i = 0; i < 14; i += 1) {
-        const wx = ((i * 97 + A.t * 4.5) % (w + 80)) - 40;
+        const wx = ((i * 97 + A.t * 3.2) % (w + 80)) - 40;
         const wy = h * (0.08 + ((i * 53) % 45) / 100);
         ctx.moveTo(wx, wy);
         ctx.quadraticCurveTo(wx + px * 5, wy - px * 0.8, wx + px * 10, wy);
@@ -1193,7 +1193,7 @@ export default function ComeOverVisuals({
         ctx.fillRect(tx + Math.cos(a) * cr * 0.82 - px * 0.17, cy + Math.sin(a) * cr * 0.82 - px * 0.17, px * 0.35, px * 0.35);
       }
       // hands — the minute hand races: time has already run on
-      const ma = A.t * 0.045, ha = A.t * 0.00375 + 2;
+      const ma = A.t * 0.028, ha = A.t * 0.0023 + 2;
       ctx.strokeStyle = '#241c38'; ctx.lineCap = 'round';
       ctx.lineWidth = Math.max(1.5, px * 0.4);
       ctx.beginPath(); ctx.moveTo(tx, cy); ctx.lineTo(tx + Math.cos(ma) * cr * 0.72, cy + Math.sin(ma) * cr * 0.72); ctx.stroke();
@@ -1480,7 +1480,7 @@ export default function ComeOverVisuals({
       ctx.fillRect(0, h * 0.55, w, groundY - h * 0.55);
       const laneY1 = h * 0.6, laneY2 = h * 0.665;
       for (let i = 0; i < 7; i += 1) {
-        const sp = 9 + (i % 3) * 3;
+        const sp = 5.5 + (i % 3) * 1.8;
         const lx = ((i * 83 + A.t * sp) % (w + 120)) - 60;
         const tg = ctx.createLinearGradient(lx - px * 10, 0, lx + px * 2, 0);
         tg.addColorStop(0, 'rgba(255,236,180,0)');
@@ -1489,7 +1489,7 @@ export default function ComeOverVisuals({
         ctx.fillRect(lx - px * 10, laneY1 + (i % 2) * px * 1.4, px * 12, px * 0.8);
       }
       for (let i = 0; i < 7; i += 1) {
-        const sp = 8 + (i % 3) * 3;
+        const sp = 5 + (i % 3) * 1.8;
         const lx = w - (((i * 97 + A.t * sp) % (w + 120)) - 60);
         const tg = ctx.createLinearGradient(lx + px * 12, 0, lx, 0);
         tg.addColorStop(0, 'rgba(255,90,90,0)');
@@ -1542,11 +1542,11 @@ export default function ComeOverVisuals({
       ctx.fillStyle = '#0e1430';
       ctx.fillRect(0, bandTop, w, bandH);
       for (let i = 0; i < 18; i += 1) {
-        const lx = ((i * 61 + A.t * 26) % (w + 90)) - 45;
+        const lx = ((i * 61 + A.t * 14) % (w + 90)) - 45;
         ctx.fillStyle = `rgba(${i % 3 ? '255,224,160' : '180,210,255'},${0.5 + (i % 2) * 0.3})`;
         ctx.fillRect(lx, bandTop + px * 1.2 + (i % 3) * px * 1.7, px * (5 + (i % 3) * 3), px * 1.1);
       }
-      ctx.fillStyle = `rgba(210,225,255,${0.05 + 0.04 * Math.sin(A.t * 0.6)})`;
+      ctx.fillStyle = `rgba(210,225,255,${0.05 + 0.03 * Math.sin(A.t * 0.3)})`;
       ctx.fillRect(0, bandTop, w, bandH);
       // platform edge + safety line
       ctx.fillStyle = '#161d3a';
@@ -1615,6 +1615,178 @@ export default function ComeOverVisuals({
       idol(w * 0.52, groundY, px, { look: 1 });
     };
 
+
+    // a narrow back alley — a swaying bulb, vent steam, nowhere in particular
+    const sceneAlley = (playing) => {
+      const { w, h, groundY, px, figW } = A.layout;
+      // sliver of night sky above the wall
+      skyGrad('#101a3e', '#1e2850', h * 0.3);
+      stars(0.5);
+      // long brick wall
+      ctx.fillStyle = '#181f3c';
+      ctx.fillRect(0, h * 0.18, w, groundY - h * 0.18);
+      ctx.fillStyle = 'rgba(10,14,32,0.5)';
+      for (let y = h * 0.2; y < groundY; y += px * 2.2) {
+        for (let x = ((y / (px * 2.2)) % 2) * px * 2; x < w; x += px * 4) {
+          ctx.fillRect(x, y, px * 3.6, px * 0.14);
+        }
+      }
+      // barred windows
+      [0.14, 0.55, 0.86].forEach((fx) => {
+        const wx2 = w * fx, wy2 = h * 0.3;
+        ctx.fillStyle = '#0c1228';
+        ctx.fillRect(wx2 - px * 2, wy2, px * 4, px * 3);
+        ctx.strokeStyle = '#181f3c'; ctx.lineWidth = Math.max(1, px * 0.25);
+        for (let b = 1; b < 4; b += 1) {
+          ctx.beginPath();
+          ctx.moveTo(wx2 - px * 2 + (px * 4 * b) / 4, wy2);
+          ctx.lineTo(wx2 - px * 2 + (px * 4 * b) / 4, wy2 + px * 3);
+          ctx.stroke();
+        }
+      });
+      // swaying bulb on a wire
+      const bx2 = w * 0.5, wireY = h * 0.16;
+      const swayA = Math.sin(A.t * 0.02) * 0.12;
+      const bulbX = bx2 + Math.sin(swayA) * px * 6, bulbY = wireY + Math.cos(swayA) * px * 5;
+      ctx.strokeStyle = '#0a1024'; ctx.lineWidth = Math.max(1, px * 0.22);
+      ctx.beginPath(); ctx.moveTo(bx2, wireY); ctx.lineTo(bulbX, bulbY); ctx.stroke();
+      const bg3 = ctx.createRadialGradient(bulbX, bulbY, 0, bulbX, bulbY, px * 9);
+      bg3.addColorStop(0, 'rgba(255,214,140,0.45)');
+      bg3.addColorStop(1, 'rgba(255,214,140,0)');
+      ctx.fillStyle = bg3;
+      ctx.fillRect(bulbX - px * 9, bulbY - px * 2, px * 18, px * 16);
+      ctx.fillStyle = '#ffe9b8';
+      ctx.beginPath(); ctx.arc(bulbX, bulbY, px * 0.7, 0, TAU); ctx.fill();
+      // ground + wet pool under the bulb
+      ctx.fillStyle = '#0c1124';
+      ctx.fillRect(0, groundY, w, h - groundY);
+      wetGlow(bulbX, groundY, px * 8, h - groundY, 'rgba(255,214,140,', 0.16, 4);
+      // dumpster + boxes
+      ctx.fillStyle = '#131b36';
+      ctx.fillRect(w * 0.8, groundY - px * 4.4, px * 7, px * 4.4);
+      ctx.fillRect(w * 0.79, groundY - px * 5, px * 7.4, px * 0.9);
+      ctx.fillRect(w * 0.08, groundY - px * 2.6, px * 3.4, px * 2.6);
+      ctx.fillRect(w * 0.14, groundY - px * 4.2, px * 2.8, px * 1.8);
+      // vent steam drifting up
+      for (let i = 0; i < 5; i += 1) {
+        const ph = ((A.t * 0.004) + i / 5) % 1;
+        const sx3 = w * 0.68 + Math.sin(ph * 5 + i) * px * 1.6;
+        const sy3 = groundY - ph * px * 12;
+        ctx.fillStyle = `rgba(150,165,200,${(1 - ph) * 0.16})`;
+        ctx.beginPath(); ctx.arc(sx3, sy3, px * (1 + ph * 2.2), 0, TAU); ctx.fill();
+      }
+      if (playing) { A.wanderer.x += Math.max(0.45, w * 0.0015); A.wanderer.walk += 0.115; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
+      idol(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
+      rain(0.3, playing);
+    };
+
+    // the last bus that never comes — waiting alone under the shelter light
+    const sceneBusstop = (playing) => {
+      const { w, h, groundY, px } = A.layout;
+      skyGrad('#101836', '#252f5c', groundY);
+      moon(w * 0.82, h * 0.14, Math.max(8, h * 0.045));
+      stars(0.8);
+      litSkyline(groundY, 0.45, 'rgba(255,210,140,0.5)');
+      ctx.fillStyle = '#0c1124';
+      ctx.fillRect(0, groundY, w, h - groundY);
+      // road edge stripe
+      ctx.fillStyle = 'rgba(210,220,255,0.1)';
+      ctx.fillRect(0, groundY + px * 2.6, w, px * 0.6);
+      // headlights far down the road that never get here
+      const far = 0.5 + 0.5 * Math.sin(A.t * 0.015);
+      const hlx = w * 0.97, hly = groundY - px * 2;
+      const hg = ctx.createRadialGradient(hlx, hly, 0, hlx, hly, px * (6 + far * 3));
+      hg.addColorStop(0, `rgba(255,240,200,${0.12 + far * 0.08})`);
+      hg.addColorStop(1, 'rgba(255,240,200,0)');
+      ctx.fillStyle = hg;
+      ctx.fillRect(hlx - px * 10, hly - px * 8, px * 20, px * 16);
+      // the shelter
+      const shx = w * 0.4, shw = px * 12, roofY = groundY - px * 10.5;
+      // glass back panel
+      ctx.fillStyle = 'rgba(150,180,235,0.09)';
+      ctx.fillRect(shx - shw / 2, roofY + px, shw, groundY - roofY - px);
+      // bench inside
+      ctx.fillStyle = '#131b36';
+      ctx.fillRect(shx - shw * 0.32, groundY - px * 2.6, shw * 0.64, px * 0.8);
+      ctx.fillRect(shx - shw * 0.28, groundY - px * 1.8, px * 0.7, px * 1.8);
+      ctx.fillRect(shx + shw * 0.22, groundY - px * 1.8, px * 0.7, px * 1.8);
+      // posts + roof
+      ctx.fillStyle = '#0e1530';
+      ctx.fillRect(shx - shw / 2, roofY, px * 0.8, groundY - roofY);
+      ctx.fillRect(shx + shw / 2 - px * 0.8, roofY, px * 0.8, groundY - roofY);
+      ctx.fillRect(shx - shw / 2 - px, roofY - px * 1.1, shw + px * 2, px * 1.4);
+      // soft light under the roof
+      const lg3 = ctx.createLinearGradient(0, roofY, 0, groundY);
+      lg3.addColorStop(0, 'rgba(235,240,255,0.16)');
+      lg3.addColorStop(1, 'rgba(235,240,255,0)');
+      ctx.fillStyle = lg3;
+      ctx.fillRect(shx - shw / 2, roofY, shw, groundY - roofY);
+      // glowing route sign on its own pole
+      const pgx = shx + shw / 2 + px * 4;
+      ctx.fillStyle = '#0a1024';
+      ctx.fillRect(pgx - px * 0.35, groundY - px * 9, px * 0.7, px * 9);
+      const sg2 = 0.8 + 0.2 * Math.sin(A.t * 0.05);
+      ctx.fillStyle = `rgba(255,206,120,${0.75 * sg2})`;
+      ctx.fillRect(pgx - px * 1.8, groundY - px * 11.2, px * 3.6, px * 2.4);
+      wetGlow(pgx, groundY, px * 5, h - groundY, 'rgba(255,206,120,', 0.14 * sg2, 6);
+      wetGlow(shx, groundY, shw * 0.9, h - groundY, 'rgba(220,230,255,', 0.08, 9);
+      // him under the shelter, watching the empty road
+      idol(shx - px * 1.5, groundY, px, { look: 1 });
+      rain(0.5, playing);
+    };
+
+    // the only thing still lit — a convenience store spilling light on the wet street
+    const sceneStore = (playing) => {
+      const { w, h, groundY, px } = A.layout;
+      skyGrad('#0f1734', '#222b54', groundY);
+      stars(0.7);
+      litSkyline(groundY, 0.4, 'rgba(255,210,140,0.4)');
+      ctx.fillStyle = '#0b1022';
+      ctx.fillRect(0, groundY, w, h - groundY);
+      // storefront
+      const stx = w * 0.56, stw = w * 0.4, sth = h * 0.34, sty = groundY - sth;
+      ctx.fillStyle = '#141b38';
+      ctx.fillRect(stx, sty - px * 3, stw, sth + px * 3);
+      // sign band: glowing color blocks, one stutters
+      const on2 = Math.sin(A.t * 0.23) > -0.4 ? 1 : 0.3;
+      [['80,200,255', 0.02, 1], ['255,120,140', 0.3, on2], ['255,214,120', 0.58, 1]].forEach(([col, off, o2]) => {
+        ctx.fillStyle = `rgba(${col},${0.85 * o2})`;
+        ctx.fillRect(stx + stw * off + px, sty - px * 2.2, stw * 0.24, px * 1.6);
+      });
+      // big bright window with shelf bands
+      const wgx = stx + px, wgy = sty + px * 1.5, wgw = stw - px * 5.5, wgh = sth - px * 3.5;
+      ctx.fillStyle = 'rgba(255,238,190,0.92)';
+      ctx.fillRect(wgx, wgy, wgw, wgh);
+      ctx.fillStyle = 'rgba(190,150,90,0.55)';
+      for (let r2 = 1; r2 < 4; r2 += 1) {
+        ctx.fillRect(wgx + px * 0.8, wgy + (wgh * r2) / 4, wgw - px * 1.6, px * 0.5);
+      }
+      // little products on the shelves
+      for (let i = 0; i < 12; i += 1) {
+        const cols2 = ['110,170,220', '220,120,120', '120,190,140', '230,180,90'];
+        ctx.fillStyle = `rgba(${cols2[i % 4]},0.9)`;
+        ctx.fillRect(wgx + px * 1.2 + (i % 4) * (wgw / 4.4), wgy + (wgh * (1 + Math.floor(i / 4))) / 4 - px * 1.4, px * 1.5, px * 1.2);
+      }
+      // door
+      ctx.fillStyle = 'rgba(255,228,170,0.85)';
+      ctx.fillRect(stx + stw - px * 4, sty + px * 1.5, px * 3, sth - px * 1.5);
+      // light spilling onto the pavement
+      const spill = ctx.createLinearGradient(0, groundY, 0, groundY + (h - groundY) * 0.9);
+      spill.addColorStop(0, 'rgba(255,236,180,0.22)');
+      spill.addColorStop(1, 'rgba(255,236,180,0)');
+      ctx.fillStyle = spill;
+      ctx.beginPath();
+      ctx.moveTo(wgx, groundY);
+      ctx.lineTo(wgx + wgw, groundY);
+      ctx.lineTo(wgx + wgw + px * 6, h);
+      ctx.lineTo(wgx - px * 6, h);
+      ctx.closePath(); ctx.fill();
+      wetGlow(wgx + wgw / 2, groundY, wgw, h - groundY, 'rgba(255,236,180,', 0.12, 2);
+      // him in the light, looking in
+      idol(stx - px * 4, groundY, px, { look: 1 });
+      rain(0.4, playing);
+    };
+
     const SCENES = {
       street: sceneStreet, day: sceneDay, citywalk: sceneCitywalk, room: sceneRoom,
       train: sceneTrain, rooftop: sceneRooftop, house: sceneHouse, neon: sceneNeon,
@@ -1623,6 +1795,7 @@ export default function ComeOverVisuals({
       clocktower: sceneClocktower, bench: sceneBench, flashbeam: sceneFlashbeam,
       vigil: sceneVigil, puddle: scenePuddle, mirror: sceneMirror,
       crossroad: sceneCrossroad, overpass: sceneOverpass, platform: scenePlatform, window: sceneWindow,
+      alley: sceneAlley, busstop: sceneBusstop, store: sceneStore,
     };
     const WALK_SCENES = { street: 1, citywalk: 1, neon: 1, train: 1 };
     const DRIFT_CUES = { 'lost-drift': 1, 'lost-echo': 1, 'ghost-trail': 1, 'cliff-wind': 1 };
