@@ -4,7 +4,7 @@ import React, { useRef, useEffect } from 'react';
 // A chibi idol character moves through 12 distinct scenes as the song plays,
 // fade-through-dark transition. Scenes are intentionally brighter than a plain
 // dark night so the art reads clearly.
-//   street citywalk day  — getting to you (incl. daytime)
+//   street citywalk (dusk) day — getting to you
 //   room train rooftop    — alone in the city at night
 //   house                 — the house, knocking on the glowing door
 //   neon storm            — the rap: neon rain, then the dark storm
@@ -94,7 +94,7 @@ export default function ComeOverVisuals({
     };
 
     // --- chibi idol character (shared head, standing/walking, knock, seated) ---
-    const idolHead = (cx, faceCy, hu) => {
+    const idolHead = (cx, faceCy, hu, look = 0) => {
       const topY = faceCy - 0.54 * hu, chinY = faceCy + 0.46 * hu;
       const headRx = 0.46 * hu, headRy = 0.52 * hu;
       // face
@@ -116,11 +116,13 @@ export default function ComeOverVisuals({
       ctx.beginPath(); ctx.ellipse(cx + 0.27 * hu, faceCy + 0.23 * hu, 0.075 * hu, 0.04 * hu, 0, 0, TAU); ctx.fill();
       // eyes, brows and mouth follow the current mood; a periodic blink keeps
       // the face alive. moods: 'wist' (lonely), 'sad', 'hope', 'smile', 'neutral'.
+      // `look` shifts the features toward the walking direction (3/4 view).
       const mood = A.mood || 'neutral';
+      const fcx = cx + look * 0.085 * hu;
       const eyeY = faceCy + 0.14 * hu, eyeDx = 0.18 * hu, ew = 0.105 * hu, eh = 0.12 * hu;
       const blink = ((A.t + 37) % 210) < 7;
       [-1, 1].forEach((s) => {
-        const ex = cx + s * eyeDx;
+        const ex = fcx + s * eyeDx;
         if (blink || mood === 'smile') {
           // closed lids: a happy arch for smiles, a soft line mid-blink
           ctx.strokeStyle = '#2a2230'; ctx.lineWidth = 0.045 * hu; ctx.lineCap = 'round';
@@ -140,26 +142,26 @@ export default function ComeOverVisuals({
       ctx.strokeStyle = PAL.hair; ctx.lineWidth = 0.04 * hu; ctx.lineCap = 'round';
       const bY = eyeY - 0.2 * hu;
       if (mood === 'sad') {
-        ctx.beginPath(); ctx.moveTo(cx - eyeDx - 0.1 * hu, bY + 0.02 * hu); ctx.quadraticCurveTo(cx - eyeDx, bY, cx - eyeDx + 0.09 * hu, bY - 0.045 * hu); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx + eyeDx - 0.09 * hu, bY - 0.045 * hu); ctx.quadraticCurveTo(cx + eyeDx, bY, cx + eyeDx + 0.1 * hu, bY + 0.02 * hu); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(fcx - eyeDx - 0.1 * hu, bY + 0.02 * hu); ctx.quadraticCurveTo(fcx - eyeDx, bY, fcx - eyeDx + 0.09 * hu, bY - 0.045 * hu); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(fcx + eyeDx - 0.09 * hu, bY - 0.045 * hu); ctx.quadraticCurveTo(fcx + eyeDx, bY, fcx + eyeDx + 0.1 * hu, bY + 0.02 * hu); ctx.stroke();
       } else if (mood === 'hope') {
-        ctx.beginPath(); ctx.moveTo(cx - eyeDx - 0.1 * hu, bY - 0.02 * hu); ctx.quadraticCurveTo(cx - eyeDx, bY - 0.075 * hu, cx - eyeDx + 0.09 * hu, bY - 0.025 * hu); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx + eyeDx - 0.09 * hu, bY - 0.025 * hu); ctx.quadraticCurveTo(cx + eyeDx, bY - 0.075 * hu, cx + eyeDx + 0.1 * hu, bY - 0.02 * hu); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(fcx - eyeDx - 0.1 * hu, bY - 0.02 * hu); ctx.quadraticCurveTo(fcx - eyeDx, bY - 0.075 * hu, fcx - eyeDx + 0.09 * hu, bY - 0.025 * hu); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(fcx + eyeDx - 0.09 * hu, bY - 0.025 * hu); ctx.quadraticCurveTo(fcx + eyeDx, bY - 0.075 * hu, fcx + eyeDx + 0.1 * hu, bY - 0.02 * hu); ctx.stroke();
       } else {
-        ctx.beginPath(); ctx.moveTo(cx - eyeDx - 0.1 * hu, bY); ctx.quadraticCurveTo(cx - eyeDx, bY - 0.03 * hu, cx - eyeDx + 0.09 * hu, bY - 0.005 * hu); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx + eyeDx - 0.09 * hu, bY - 0.005 * hu); ctx.quadraticCurveTo(cx + eyeDx, bY - 0.03 * hu, cx + eyeDx + 0.1 * hu, bY); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(fcx - eyeDx - 0.1 * hu, bY); ctx.quadraticCurveTo(fcx - eyeDx, bY - 0.03 * hu, fcx - eyeDx + 0.09 * hu, bY - 0.005 * hu); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(fcx + eyeDx - 0.09 * hu, bY - 0.005 * hu); ctx.quadraticCurveTo(fcx + eyeDx, bY - 0.03 * hu, fcx + eyeDx + 0.1 * hu, bY); ctx.stroke();
       }
       // nose hint
       ctx.strokeStyle = 'rgba(150,110,90,0.45)'; ctx.lineWidth = 0.022 * hu;
-      ctx.beginPath(); ctx.moveTo(cx - 0.01 * hu, faceCy + 0.22 * hu); ctx.lineTo(cx + 0.02 * hu, faceCy + 0.27 * hu); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(fcx - 0.01 * hu, faceCy + 0.22 * hu); ctx.lineTo(fcx + 0.02 * hu, faceCy + 0.27 * hu); ctx.stroke();
       // mouth per mood
       ctx.strokeStyle = '#9a5b4a'; ctx.lineWidth = 0.03 * hu;
       ctx.beginPath();
-      if (mood === 'sad') ctx.arc(cx, faceCy + 0.42 * hu, 0.06 * hu, Math.PI * 1.15, Math.PI * 1.85);
-      else if (mood === 'wist') { ctx.moveTo(cx - 0.05 * hu, faceCy + 0.36 * hu); ctx.lineTo(cx + 0.05 * hu, faceCy + 0.36 * hu); }
-      else if (mood === 'smile') ctx.arc(cx, faceCy + 0.33 * hu, 0.085 * hu, 0.1 * Math.PI, 0.9 * Math.PI);
-      else if (mood === 'hope') { ctx.stroke(); ctx.fillStyle = '#9a5b4a'; ctx.beginPath(); ctx.ellipse(cx, faceCy + 0.36 * hu, 0.035 * hu, 0.045 * hu, 0, 0, TAU); ctx.fill(); }
-      else ctx.arc(cx, faceCy + 0.34 * hu, 0.07 * hu, 0.12 * Math.PI, 0.88 * Math.PI);
+      if (mood === 'sad') ctx.arc(fcx, faceCy + 0.42 * hu, 0.06 * hu, Math.PI * 1.15, Math.PI * 1.85);
+      else if (mood === 'wist') { ctx.moveTo(fcx - 0.05 * hu, faceCy + 0.36 * hu); ctx.lineTo(fcx + 0.05 * hu, faceCy + 0.36 * hu); }
+      else if (mood === 'smile') ctx.arc(fcx, faceCy + 0.33 * hu, 0.085 * hu, 0.1 * Math.PI, 0.9 * Math.PI);
+      else if (mood === 'hope') { ctx.stroke(); ctx.fillStyle = '#9a5b4a'; ctx.beginPath(); ctx.ellipse(fcx, faceCy + 0.36 * hu, 0.035 * hu, 0.045 * hu, 0, 0, TAU); ctx.fill(); }
+      else ctx.arc(fcx, faceCy + 0.34 * hu, 0.07 * hu, 0.12 * Math.PI, 0.88 * Math.PI);
       if (mood !== 'hope') ctx.stroke();
       // hair with side-swept fringe
       ctx.fillStyle = PAL.hair;
@@ -179,7 +181,8 @@ export default function ComeOverVisuals({
       ctx.restore();
     };
 
-    const idol = (cx, footY, p, { walk = null, knock = 0 } = {}) => {
+    const idol = (cx, footY, p, { walk = null, knock = 0, look = null } = {}) => {
+      const lookDir = look != null ? look : (walk != null ? 1 : 0);
       const H = p * 11, hu = H / 3;
       // gait: hips bob while the feet stay planted; idle gets a breathing sway.
       const bob = walk != null ? Math.abs(Math.sin(walk)) * 0.05 * hu : Math.sin(A.t * 0.045) * 0.016 * hu;
@@ -194,17 +197,25 @@ export default function ComeOverVisuals({
       const faceCy = topY + 0.54 * hu, chinY = topY + 1.0 * hu, shoulderY = topY + 1.12 * hu;
       const waistY = topY + 1.62 * hu, hipY = topY + 1.95 * hu, coatHemY = topY + 2.15 * hu;
       const shHalf = 0.5 * hu, waistHalf = 0.44 * hu, hemHalf = 0.54 * hu, legHalf = 0.15 * hu;
-      const sw = walk != null ? Math.sin(walk) * 0.1 * hu : 0;
       // shadow
       ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath();
       ctx.ellipse(cx, footY + 1, hemHalf * 1.25, 0.12 * hu, 0, 0, TAU); ctx.fill();
-      // legs + shoes
+      // legs + shoes — feet stay narrow, under the body. Walking is a scissor
+      // stride along the direction of travel with a small lift on the swinging
+      // leg, so he steps instead of sliding sideways like a crab.
       ctx.strokeStyle = PAL.pants; ctx.lineWidth = legHalf * 2; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(cx - 0.17 * hu, hipY); ctx.lineTo(cx - 0.19 * hu + sw, footY - 0.13 * hu); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx + 0.17 * hu, hipY); ctx.lineTo(cx + 0.19 * hu - sw, footY - 0.13 * hu); ctx.stroke();
+      const stepA = walk != null ? Math.sin(walk) : 0;
+      const stepB = walk != null ? -Math.sin(walk) : 0;
+      const liftA = walk != null ? Math.max(0, Math.cos(walk)) * 0.07 * hu : 0;
+      const liftB = walk != null ? Math.max(0, -Math.cos(walk)) * 0.07 * hu : 0;
+      const fAx = cx - 0.1 * hu + stepA * 0.13 * hu, fAy = footY - 0.11 * hu - liftA;
+      const fBx = cx + 0.1 * hu + stepB * 0.13 * hu, fBy = footY - 0.11 * hu - liftB;
+      ctx.beginPath(); ctx.moveTo(cx - 0.08 * hu, hipY); ctx.lineTo(fAx, fAy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + 0.08 * hu, hipY); ctx.lineTo(fBx, fBy); ctx.stroke();
       ctx.fillStyle = '#111118';
-      ctx.beginPath(); ctx.ellipse(cx - 0.22 * hu + sw, footY - 0.06 * hu, 0.2 * hu, 0.1 * hu, 0, 0, TAU); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(cx + 0.22 * hu - sw, footY - 0.06 * hu, 0.2 * hu, 0.1 * hu, 0, 0, TAU); ctx.fill();
+      const toe = walk != null ? 0.05 * hu : 0; // shoes point where he is going
+      ctx.beginPath(); ctx.ellipse(fAx + toe, fAy + 0.06 * hu, 0.16 * hu, 0.085 * hu, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(fBx + toe, fBy + 0.06 * hu, 0.16 * hu, 0.085 * hu, 0, 0, TAU); ctx.fill();
       // coat
       const cg = ctx.createLinearGradient(cx - shHalf, 0, cx + shHalf, 0);
       cg.addColorStop(0, PAL.coatShade); cg.addColorStop(0.45, PAL.coat); cg.addColorStop(1, PAL.coatShade);
@@ -225,7 +236,7 @@ export default function ComeOverVisuals({
       if (knock > 0.04) {
         const hX = cx + (0.62 + 0.5 * knock) * hu, hY = shoulderY - (0.05 + 0.28 * knock) * hu;
         ctx.beginPath(); ctx.moveTo(cx + shHalf * 0.8, shoulderY + 0.12 * hu); ctx.quadraticCurveTo(cx + 0.66 * hu, shoulderY - 0.05 * hu, hX, hY); ctx.stroke();
-        ctx.fillStyle = PAL.skin; ctx.beginPath(); ctx.arc(hX, hY, 0.1 * hu, 0, TAU); ctx.fill();
+        ctx.fillStyle = PAL.skin; ctx.beginPath(); ctx.arc(hX, hY, 0.085 * hu, 0, TAU); ctx.fill();
       } else {
         ctx.beginPath(); ctx.moveTo(cx + shHalf * 0.85, shoulderY + 0.12 * hu); ctx.quadraticCurveTo(cx + hemHalf * 0.95, waistY, cx + waistHalf * 0.6, hipY - 0.05 * hu); ctx.stroke();
       }
@@ -236,7 +247,7 @@ export default function ComeOverVisuals({
       ctx.fillRect(cx + 0.02 * hu, shoulderY + 0.05 * hu, 0.16 * hu, 0.5 * hu);
       // neck + head
       ctx.fillStyle = PAL.skin; ctx.fillRect(cx - 0.12 * hu, chinY - 0.12 * hu, 0.24 * hu, 0.22 * hu);
-      idolHead(cx, faceCy, hu);
+      idolHead(cx, faceCy, hu, lookDir);
       // cool rim light on the right contour
       ctx.strokeStyle = 'rgba(150,180,230,0.5)'; ctx.lineWidth = 0.045 * hu; ctx.beginPath();
       ctx.moveTo(cx + shHalf * 0.96, shoulderY);
@@ -252,7 +263,7 @@ export default function ComeOverVisuals({
       const shHalf = 0.5 * hu, hipHalf = 0.52 * hu, legHalf = 0.15 * hu;
       if (!noLegs) {
         ctx.fillStyle = 'rgba(0,0,0,0.32)'; ctx.beginPath();
-        ctx.ellipse(cx, hipY + (dangle ? 1.5 * hu : 0.62 * hu), 0.75 * hu, 0.12 * hu, 0, 0, TAU); ctx.fill();
+        ctx.ellipse(cx, hipY + (dangle ? 1.5 * hu : 0.62 * hu), 0.55 * hu, 0.12 * hu, 0, 0, TAU); ctx.fill();
         ctx.strokeStyle = PAL.pants; ctx.lineWidth = legHalf * 2; ctx.lineCap = 'round';
         if (dangle) {
           ctx.beginPath(); ctx.moveTo(cx - 0.2 * hu, hipY); ctx.lineTo(cx - 0.22 * hu, hipY + 1.35 * hu); ctx.stroke();
@@ -261,11 +272,12 @@ export default function ComeOverVisuals({
           ctx.beginPath(); ctx.ellipse(cx - 0.22 * hu, hipY + 1.42 * hu, 0.16 * hu, 0.09 * hu, 0, 0, TAU); ctx.fill();
           ctx.beginPath(); ctx.ellipse(cx + 0.22 * hu, hipY + 1.42 * hu, 0.16 * hu, 0.09 * hu, 0, 0, TAU); ctx.fill();
         } else {
-          ctx.beginPath(); ctx.moveTo(cx - 0.18 * hu, hipY - 0.05 * hu); ctx.quadraticCurveTo(cx - 0.62 * hu, hipY + 0.2 * hu, cx - 0.64 * hu, hipY + 0.62 * hu); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(cx + 0.18 * hu, hipY - 0.05 * hu); ctx.quadraticCurveTo(cx + 0.62 * hu, hipY + 0.2 * hu, cx + 0.64 * hu, hipY + 0.62 * hu); ctx.stroke();
+          // knees bent gently forward, feet close together — no wide splay
+          ctx.beginPath(); ctx.moveTo(cx - 0.13 * hu, hipY - 0.02 * hu); ctx.quadraticCurveTo(cx - 0.3 * hu, hipY + 0.3 * hu, cx - 0.2 * hu, hipY + 0.58 * hu); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(cx + 0.13 * hu, hipY - 0.02 * hu); ctx.quadraticCurveTo(cx + 0.3 * hu, hipY + 0.3 * hu, cx + 0.2 * hu, hipY + 0.58 * hu); ctx.stroke();
           ctx.fillStyle = '#111118';
-          ctx.beginPath(); ctx.ellipse(cx - 0.66 * hu, hipY + 0.64 * hu, 0.18 * hu, 0.09 * hu, 0, 0, TAU); ctx.fill();
-          ctx.beginPath(); ctx.ellipse(cx + 0.66 * hu, hipY + 0.64 * hu, 0.18 * hu, 0.09 * hu, 0, 0, TAU); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(cx - 0.21 * hu, hipY + 0.61 * hu, 0.15 * hu, 0.08 * hu, 0, 0, TAU); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(cx + 0.21 * hu, hipY + 0.61 * hu, 0.15 * hu, 0.08 * hu, 0, 0, TAU); ctx.fill();
         }
       }
       // seated torso
@@ -480,24 +492,29 @@ export default function ComeOverVisuals({
 
     const sceneCitywalk = (playing) => {
       const { w, h, groundY, px, figW } = A.layout;
-      skyGrad('#6fb8ef', '#cfe8fb', groundY);
-      sun(w * 0.78, h * 0.18, Math.max(11, h * 0.06), '#fff7d6');
-      clouds(playing);
-      // daytime buildings
+      // dusk boulevard — the "empty night falls" reading of the second chorus
+      skyGrad('#1a2150', '#54406e', groundY);
+      moon(w * 0.22, h * 0.18, Math.max(9, h * 0.05));
+      stars(0.55);
+      clouds(playing, 'rgba(96,84,128,0.5)');
       A.skyline.forEach((b, bi) => {
         const bh = b.h * 0.95;
-        ctx.fillStyle = bi % 2 ? '#9fb4cf' : '#b6c6dc';
+        ctx.fillStyle = bi % 2 ? '#222a4e' : '#2a3358';
         ctx.fillRect(b.x, groundY - bh, b.w, bh);
-        ctx.fillStyle = 'rgba(70,90,120,0.5)';
         for (let wy = groundY - bh + 6; wy < groundY - 6; wy += 9)
-          for (let wx = b.x + 5; wx < b.x + b.w - 5; wx += 8) ctx.fillRect(wx, wy, 4, 5);
+          for (let wx = b.x + 5; wx < b.x + b.w - 5; wx += 8)
+            if (((wx * 5 + wy * 7 + bi) % 7) < 2) {
+              ctx.fillStyle = 'rgba(255,206,140,0.8)';
+              ctx.fillRect(wx, wy, 4, 5);
+            }
       });
-      ctx.fillStyle = '#5b6675';
+      ctx.fillStyle = '#1d2338';
       ctx.fillRect(0, groundY, w, h - groundY);
-      ctx.fillStyle = 'rgba(255,255,255,0.55)'; // crosswalk
+      ctx.fillStyle = 'rgba(210,220,255,0.28)'; // crosswalk under the moon
       for (let x = w * 0.1; x < w * 0.9; x += px * 5) ctx.fillRect(x, groundY + px * 2, px * 3, px);
       if (playing) { A.wanderer.x += Math.max(1, w * 0.003); A.wanderer.walk += 0.24; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
       idol(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
+      rain(0.3, playing);
     };
 
     const sceneRoom = (playing) => {
@@ -669,6 +686,7 @@ export default function ComeOverVisuals({
       idol(walkX, groundY, px * 1.1, {
         knock: arriving ? 0 : A.wanderer.knockArm,
         walk: arriving ? A.wanderer.walk : null,
+        look: 1, // he keeps facing the door
       });
       if (playing && arriving) A.wanderer.walk += 0.16;
       rain(0.55, playing);
@@ -947,14 +965,13 @@ export default function ComeOverVisuals({
 
       switch (event.type) {
         case 'knock':
-          // arm the gentle-knock loop (soft repeated taps) instead of a jab
+          // arm the tok-tok loop (light wrist taps) — no screen shake
           A.knockTimer = Math.max(A.knockTimer, 110); A.houseHurry = true;
-          if (!reduced) A.cameraShake = Math.max(A.cameraShake, 0.22);
-          pushDoorRipple(0.8); break;
+          pushDoorRipple(0.4); break;
         case 'heartbeat-knock':
           A.knockTimer = Math.max(A.knockTimer, 130); A.houseHurry = true; A.heartPulse = 1;
-          if (!reduced) A.cameraShake = Math.max(A.cameraShake, 0.18);
-          pushDoorRipple(0.7); break;
+          if (!reduced) A.cameraShake = Math.max(A.cameraShake, 0.08);
+          pushDoorRipple(0.35); break;
         case 'door-open':
           A.doorOpenTarget = Math.max(A.doorOpenTarget, 0.5); A.doorGlowTarget = 1; A.houseHurry = true; break;
         case 'final-open':
@@ -1049,10 +1066,17 @@ export default function ComeOverVisuals({
       // gentle knocking: while the timer runs, the arm hovers and taps softly;
       // a faint door ripple lands on each contact, then the arm eases down.
       if (A.knockTimer > 0) {
-        if (playing) A.knockTimer -= 1;
-        A.wanderer.knockArm = 0.5 + 0.32 * Math.sin(A.t * 0.16);
-        const s1 = Math.sin(A.t * 0.16), s0 = Math.sin((A.t - 1) * 0.16);
-        if (s1 > 0.94 && s0 <= 0.94 && A.sceneCur === 'house') pushDoorRipple(0.4);
+        // hold the taps until he has actually reached the door
+        const waiting = A.sceneCur === 'house' && A.houseApproach < 0.985;
+        if (playing && !waiting) A.knockTimer -= 1;
+        // "tok, tok" — the hand hovers by the door and gives two light wrist
+        // taps, then rests a beat. Small motion, soft ripples, no thumping.
+        const kc = A.t % 84;
+        let tap = 0;
+        if (kc < 7) tap = Math.sin((kc / 7) * Math.PI);
+        else if (kc >= 12 && kc < 19) tap = Math.sin(((kc - 12) / 7) * Math.PI);
+        A.wanderer.knockArm = 0.66 + tap * 0.12;
+        if (!waiting && (kc === 2 || kc === 14) && A.sceneCur === 'house') pushDoorRipple(0.3);
       } else {
         A.wanderer.knockArm *= 0.9;
       }
