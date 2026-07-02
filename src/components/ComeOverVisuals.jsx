@@ -893,10 +893,170 @@ export default function ComeOverVisuals({
       });
     };
 
+
+    // --- lyric cutscenes ---
+
+    // "이렇게 또 너를 불러" — calling you from a rainy phone booth
+    const scenePhonebooth = (playing) => {
+      const { w, h, groundY, px } = A.layout;
+      skyGrad('#111a3e', '#26325e', groundY);
+      moon(w * 0.14, h * 0.16, Math.max(9, h * 0.05));
+      stars(0.7);
+      litSkyline(groundY, 0.55, 'rgba(255,210,140,0.6)');
+      ctx.fillStyle = '#0d1226';
+      ctx.fillRect(0, groundY, w, h - groundY);
+
+      const bx = w * 0.55, bw = px * 9, bh = px * 14.5, bl = bx - bw / 2, bt = groundY - bh;
+      const glow = 0.5 + 0.35 * Math.max(A.phoneGlow, 0.25 + 0.15 * Math.sin(A.t * 0.04));
+      // booth back panel + warm interior light
+      ctx.fillStyle = '#1b2547';
+      ctx.fillRect(bl, bt, bw, bh);
+      const ig = ctx.createRadialGradient(bx, bt + bh * 0.45, 0, bx, bt + bh * 0.45, bw * 1.1);
+      ig.addColorStop(0, `rgba(255,214,140,${0.35 * glow})`);
+      ig.addColorStop(1, 'rgba(255,214,140,0)');
+      ctx.fillStyle = ig;
+      ctx.fillRect(bl, bt, bw, bh);
+      // wall phone box
+      ctx.fillStyle = '#0e1430';
+      ctx.fillRect(bx + bw * 0.16, bt + bh * 0.3, px * 1.4, px * 2);
+      // the caller
+      const pb = px * 0.92;
+      idol(bx - px * 0.6, groundY, pb, { look: 1 });
+      // receiver held to the ear, cord swaying gently to the wall box
+      const hu = (pb * 11) / 3;
+      const topY = groundY - pb * 11;
+      const earX = bx - px * 0.6 + 0.5 * hu, earY = topY + 0.62 * hu;
+      ctx.strokeStyle = PAL.coat; ctx.lineWidth = 0.24 * hu; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(bx - px * 0.6 + 0.38 * hu, topY + 1.3 * hu);
+      ctx.quadraticCurveTo(earX + 0.28 * hu, earY + 0.5 * hu, earX + 0.05 * hu, earY + 0.1 * hu);
+      ctx.stroke();
+      ctx.fillStyle = '#10162e';
+      ctx.fillRect(earX - 0.06 * hu, earY - 0.3 * hu, 0.18 * hu, 0.55 * hu);
+      ctx.strokeStyle = 'rgba(16,22,46,0.9)'; ctx.lineWidth = Math.max(1, px * 0.26);
+      ctx.beginPath();
+      ctx.moveTo(earX + 0.08 * hu, earY + 0.28 * hu);
+      ctx.quadraticCurveTo(bx + bw * 0.08, bt + bh * 0.66 + Math.sin(A.t * 0.05) * px, bx + bw * 0.2, bt + bh * 0.44);
+      ctx.stroke();
+      // glass tint + frame + roof sign lamp
+      ctx.fillStyle = 'rgba(170,200,255,0.07)';
+      ctx.fillRect(bl, bt, bw, bh);
+      ctx.strokeStyle = '#0a1024'; ctx.lineWidth = Math.max(2, px * 0.6);
+      ctx.strokeRect(bl, bt, bw, bh);
+      ctx.beginPath();
+      ctx.moveTo(bl, bt + bh * 0.5); ctx.lineTo(bl + bw, bt + bh * 0.5);
+      ctx.stroke();
+      ctx.fillStyle = '#0e1839';
+      ctx.fillRect(bl - px * 0.5, bt - px * 1.8, bw + px, px * 1.8);
+      ctx.fillStyle = `rgba(255,206,120,${0.4 + 0.5 * glow})`;
+      ctx.fillRect(bx - px * 1.5, bt - px * 1.3, px * 3, px * 0.8);
+      wetGlow(bx, groundY, bw * 1.4, h - groundY, 'rgba(255,214,140,', 0.2 * glow, 3);
+      rain(0.6, playing);
+    };
+
+    // "각자 이야긴 묻어 둘까" — burying the story under a bare tree
+    const sceneMemory = (playing) => {
+      const { w, h, groundY, px } = A.layout;
+      skyGrad('#131a3c', '#2b3160', groundY);
+      moon(w * 0.2, h * 0.18, Math.max(8, h * 0.045));
+      stars(0.75);
+      ctx.fillStyle = '#10142a';
+      ctx.fillRect(0, groundY, w, h - groundY);
+      // bare tree on the right
+      ctx.strokeStyle = '#0a0f22'; ctx.lineCap = 'round';
+      ctx.lineWidth = px * 1.6;
+      ctx.beginPath(); ctx.moveTo(w * 0.78, groundY + px); ctx.quadraticCurveTo(w * 0.77, groundY - h * 0.28, w * 0.74, groundY - h * 0.42); ctx.stroke();
+      ctx.lineWidth = px * 0.8;
+      ctx.beginPath(); ctx.moveTo(w * 0.765, groundY - h * 0.24); ctx.quadraticCurveTo(w * 0.85, groundY - h * 0.34, w * 0.9, groundY - h * 0.31); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(w * 0.755, groundY - h * 0.33); ctx.quadraticCurveTo(w * 0.68, groundY - h * 0.44, w * 0.63, groundY - h * 0.43); ctx.stroke();
+      ctx.lineWidth = px * 0.45;
+      ctx.beginPath(); ctx.moveTo(w * 0.74, groundY - h * 0.42); ctx.quadraticCurveTo(w * 0.72, groundY - h * 0.5, w * 0.76, groundY - h * 0.54); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(w * 0.9, groundY - h * 0.31); ctx.quadraticCurveTo(w * 0.95, groundY - h * 0.36, w * 0.97, groundY - h * 0.34); ctx.stroke();
+      // the keepsake, half in the earth, softly glowing
+      const kx = w * 0.52, ky = groundY - px * 0.6;
+      const kg = ctx.createRadialGradient(kx, ky, 0, kx, ky, px * 6);
+      kg.addColorStop(0, `rgba(255,214,150,${0.4 + 0.15 * A.beat})`);
+      kg.addColorStop(1, 'rgba(255,214,150,0)');
+      ctx.fillStyle = kg;
+      ctx.fillRect(kx - px * 6, ky - px * 6, px * 12, px * 12);
+      ctx.fillStyle = '#c9a06a';
+      ctx.fillRect(kx - px * 1.2, ky - px * 0.9, px * 2.4, px * 0.9);
+      ctx.fillStyle = '#1a2140';
+      ctx.fillRect(kx - px * 1.6, ky, px * 3.2, px * 1);
+      ctx.fillStyle = '#0c1126';
+      ctx.beginPath(); ctx.ellipse(kx + px * 3.4, groundY + px * 0.2, px * 1.6, px * 0.7, 0, 0, TAU); ctx.fill();
+      // light motes sinking into the ground — memories settling
+      for (let i = 0; i < 7; i += 1) {
+        const ph = ((A.t * 0.006) + i / 7) % 1;
+        const mx = kx + Math.sin(i * 2.7) * px * 5;
+        const my = ky - px * 7 * (1 - ph);
+        ctx.fillStyle = `rgba(255,224,160,${(1 - ph) * 0.55})`;
+        ctx.fillRect(mx, my, px * 0.6, px * 0.6);
+      }
+      // he kneels beside it
+      idolSit(w * 0.4, groundY - px * 0.4, px * 0.95, {});
+    };
+
+    // "벼랑 끝 그 앞" — at the wind-blown cliff edge over a dark sea
+    const sceneCliff = (playing) => {
+      const { w, h, px } = A.layout;
+      const seaY = h * 0.62;
+      skyGrad('#0f1a40', '#27406b', seaY);
+      moon(w * 0.74, h * 0.15, Math.max(9, h * 0.05));
+      stars(0.85);
+      // wind streaks racing across the sky
+      ctx.strokeStyle = 'rgba(200,215,245,0.14)'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i < 14; i += 1) {
+        const wx = ((i * 97 + A.t * 4.5) % (w + 80)) - 40;
+        const wy = h * (0.08 + ((i * 53) % 45) / 100);
+        ctx.moveTo(wx, wy);
+        ctx.quadraticCurveTo(wx + px * 5, wy - px * 0.8, wx + px * 10, wy);
+      }
+      ctx.stroke();
+      // dark sea with moon glitter
+      const sg = ctx.createLinearGradient(0, seaY, 0, h);
+      sg.addColorStop(0, '#12264c'); sg.addColorStop(1, '#080f22');
+      ctx.fillStyle = sg;
+      ctx.fillRect(0, seaY, w, h - seaY);
+      ctx.fillStyle = 'rgba(226,232,240,0.14)';
+      for (let y = seaY + px; y < h; y += px * 2) {
+        const ww = px * (1.5 + 3 * Math.abs(Math.sin(y * 0.22 + A.t * 0.06)));
+        ctx.fillRect(w * 0.74 - ww / 2, y, ww, px * 0.8);
+      }
+      // the cliff, jagged face dropping to the water
+      const cliffY = h * 0.56;
+      ctx.fillStyle = '#131a33';
+      ctx.beginPath();
+      ctx.moveTo(0, cliffY);
+      ctx.lineTo(w * 0.56, cliffY);
+      ctx.lineTo(w * 0.6, cliffY + px * 3);
+      ctx.lineTo(w * 0.55, seaY + px * 4);
+      ctx.lineTo(w * 0.58, h * 0.8);
+      ctx.lineTo(w * 0.5, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fill();
+      // grass flattening in the gusts
+      const lean = 1.6 + 0.9 * Math.sin(A.t * 0.07);
+      ctx.strokeStyle = '#1d2947'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let gx = px; gx < w * 0.55; gx += px * 1.6) {
+        const tall = 2.5 + ((gx * 7) % 3);
+        ctx.moveTo(gx, cliffY);
+        ctx.quadraticCurveTo(gx + lean * 2, cliffY - px * tall * 0.7, gx + lean * 3.2, cliffY - px * tall * 0.45);
+      }
+      ctx.stroke();
+      // he stands at the edge, looking out over the drop
+      idol(w * 0.47, cliffY, px, { look: 1 });
+      rain(0.25, playing);
+    };
+
     const SCENES = {
       street: sceneStreet, day: sceneDay, citywalk: sceneCitywalk, room: sceneRoom,
       train: sceneTrain, rooftop: sceneRooftop, house: sceneHouse, neon: sceneNeon,
       storm: sceneStorm, boat: sceneBoat, sunset: sceneSunset, dawn: sceneDawn,
+      phonebooth: scenePhonebooth, memory: sceneMemory, cliff: sceneCliff,
     };
     const WALK_SCENES = { street: 1, citywalk: 1, neon: 1, train: 1 };
     const DRIFT_CUES = { 'lost-drift': 1, 'lost-echo': 1, 'ghost-trail': 1, 'cliff-wind': 1 };

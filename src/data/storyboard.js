@@ -21,7 +21,7 @@ export const STORYBOARD = [
 
   // verse 1 — alone, phone glow, time passed, burying memories
   { scene: 'room', cue: 'phone-glow', transition: 'warm-fade', intensity: 0.55, display: { breakAfter: [5] } }, // 6
-  { scene: 'room', cue: 'bury-memory', transition: 'dissolve', intensity: 0.55, display: { breakAfter: [3] } }, // 7
+  { scene: 'memory', cue: 'bury-memory', transition: 'dissolve', intensity: 0.55, display: { breakAfter: [3] } }, // 7 — burying the keepsake
   { scene: 'train', cue: 'late-clock', transition: 'dissolve', intensity: 0.55, display: { breakAfter: [3] } }, // 8
   { scene: 'day', cue: 'rewind-restart', transition: 'warm-fade', intensity: 0.6, display: { breakAfter: [2] } }, // 9
 
@@ -50,7 +50,7 @@ export const STORYBOARD = [
   { scene: 'storm', cue: 'metaphor-distort', transition: 'flash-cut', intensity: 0.6 }, // 27
 
   // chorus 3 — on a night train, reflecting, heading back
-  { scene: 'train', cue: 'night-window', transition: 'dissolve', intensity: 0.5, display: { breakAfter: [4] } }, // 28
+  { scene: 'phonebooth', cue: 'phone-glow', transition: 'dissolve', intensity: 0.5, display: { breakAfter: [4] } }, // 28 — calling from the booth
   { scene: 'train', cue: 'lost-drift', transition: 'dissolve', intensity: 0.5 }, // 29
   { scene: 'train', cue: 'lost-echo', transition: 'dissolve', intensity: 0.55 }, // 30
   { scene: 'train', cue: 'apology-reflection', transition: 'warm-fade', intensity: 0.55, display: { breakAfter: [5] } }, // 31
@@ -65,7 +65,7 @@ export const STORYBOARD = [
 
   // bridge / final rap — heartbeat, cliff, hurt, savior
   { scene: 'house', cue: 'heartbeat-knock', transition: 'light-wipe', intensity: 0.95, display: { breakAfter: [4] }, wordCues: { 0: 'heartbeat-knock', 1: 'heartbeat-knock' } }, // 38
-  { scene: 'rooftop', cue: 'cliff-wind', transition: 'dissolve', intensity: 0.65, display: { breakAfter: [3] } }, // 39
+  { scene: 'cliff', cue: 'cliff-wind', transition: 'dissolve', intensity: 0.65, display: { breakAfter: [3] } }, // 39 — at the cliff edge
   { scene: 'storm', cue: 'hurt-storm', transition: 'rain-wipe', intensity: 0.75, display: { breakAfter: [3] } }, // 40
   { scene: 'sunset', cue: 'rescue-light', transition: 'warm-fade', intensity: 0.7, display: { breakAfter: [3] } }, // 41
   { scene: 'sunset', cue: 'page-turn', transition: 'warm-fade', intensity: 0.6, display: { breakAfter: [2] } }, // 42
