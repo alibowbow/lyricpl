@@ -1055,46 +1055,110 @@ export default function ComeOverVisuals({
 
     // A soft feminine silhouette — the "you" of the song, kept faceless like
     // a memory. Seated (bench) and standing (crossing the flashlight beam).
-    const girlSit = (cx, hipY, p, col = '#432c50') => {
+    const girlSit = (cx, hipY, p) => {
       const hu = (p * 11) / 3;
-      ctx.strokeStyle = col; ctx.lineWidth = 0.24 * hu; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(cx - 0.12 * hu, hipY); ctx.lineTo(cx - 0.15 * hu, hipY + 1.25 * hu); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx + 0.12 * hu, hipY); ctx.lineTo(cx + 0.09 * hu, hipY + 1.25 * hu); ctx.stroke();
-      ctx.fillStyle = col;
+      const HAIR = '#4a3040', HAIR_HI = '#6b4a5c', SKIN = '#f6d3b3', DRESS = '#b56a76', DRESS_SH = '#96525f';
+      // long hair, back layer, falling to the seat
+      ctx.fillStyle = HAIR;
       ctx.beginPath();
-      ctx.moveTo(cx - 0.42 * hu, hipY + 0.15 * hu);
-      ctx.quadraticCurveTo(cx - 0.3 * hu, hipY - 1.0 * hu, cx, hipY - 1.05 * hu);
-      ctx.quadraticCurveTo(cx + 0.3 * hu, hipY - 1.0 * hu, cx + 0.42 * hu, hipY + 0.15 * hu);
+      ctx.moveTo(cx - 0.5 * hu, hipY - 1.15 * hu);
+      ctx.quadraticCurveTo(cx - 0.62 * hu, hipY - 0.2 * hu, cx - 0.42 * hu, hipY + 0.26 * hu);
+      ctx.lineTo(cx + 0.42 * hu, hipY + 0.26 * hu);
+      ctx.quadraticCurveTo(cx + 0.62 * hu, hipY - 0.2 * hu, cx + 0.5 * hu, hipY - 1.15 * hu);
       ctx.closePath(); ctx.fill();
-      const hy = hipY - 1.5 * hu;
-      ctx.beginPath(); ctx.arc(cx - 0.05 * hu, hy, 0.42 * hu, 0, TAU); ctx.fill(); // head, leaning a touch
-      ctx.beginPath(); // long hair falling behind the shoulders
-      ctx.moveTo(cx - 0.45 * hu, hy);
-      ctx.quadraticCurveTo(cx - 0.55 * hu, hipY - 0.35 * hu, cx - 0.36 * hu, hipY + 0.12 * hu);
-      ctx.lineTo(cx + 0.3 * hu, hipY + 0.12 * hu);
-      ctx.quadraticCurveTo(cx + 0.5 * hu, hipY - 0.35 * hu, cx + 0.37 * hu, hy);
+      // legs over the bench edge + little shoes
+      ctx.strokeStyle = SKIN; ctx.lineWidth = 0.14 * hu; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cx - 0.13 * hu, hipY + 0.1 * hu); ctx.lineTo(cx - 0.15 * hu, hipY + 1.12 * hu); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + 0.13 * hu, hipY + 0.1 * hu); ctx.lineTo(cx + 0.11 * hu, hipY + 1.12 * hu); ctx.stroke();
+      ctx.fillStyle = '#7a3d4a';
+      ctx.beginPath(); ctx.ellipse(cx - 0.16 * hu, hipY + 1.2 * hu, 0.13 * hu, 0.075 * hu, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + 0.12 * hu, hipY + 1.2 * hu, 0.13 * hu, 0.075 * hu, 0, 0, TAU); ctx.fill();
+      // dress: rounded shoulders, gently flaring over the seat
+      const shoulderY = hipY - 0.95 * hu;
+      const dg = ctx.createLinearGradient(cx - 0.4 * hu, 0, cx + 0.4 * hu, 0);
+      dg.addColorStop(0, DRESS_SH); dg.addColorStop(0.5, DRESS); dg.addColorStop(1, DRESS_SH);
+      ctx.fillStyle = dg;
+      ctx.beginPath();
+      ctx.moveTo(cx - 0.32 * hu, shoulderY);
+      ctx.quadraticCurveTo(cx - 0.44 * hu, hipY - 0.2 * hu, cx - 0.4 * hu, hipY + 0.16 * hu);
+      ctx.quadraticCurveTo(cx, hipY + 0.3 * hu, cx + 0.4 * hu, hipY + 0.16 * hu);
+      ctx.quadraticCurveTo(cx + 0.44 * hu, hipY - 0.2 * hu, cx + 0.32 * hu, shoulderY);
+      ctx.quadraticCurveTo(cx, shoulderY - 0.22 * hu, cx - 0.32 * hu, shoulderY);
       ctx.closePath(); ctx.fill();
+      // arms resting together in her lap
+      ctx.strokeStyle = DRESS; ctx.lineWidth = 0.17 * hu; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cx - 0.28 * hu, shoulderY + 0.15 * hu); ctx.quadraticCurveTo(cx - 0.34 * hu, hipY - 0.3 * hu, cx - 0.05 * hu, hipY - 0.1 * hu); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + 0.28 * hu, shoulderY + 0.15 * hu); ctx.quadraticCurveTo(cx + 0.34 * hu, hipY - 0.3 * hu, cx + 0.05 * hu, hipY - 0.1 * hu); ctx.stroke();
+      ctx.fillStyle = SKIN;
+      ctx.beginPath(); ctx.arc(cx, hipY - 0.1 * hu, 0.07 * hu, 0, TAU); ctx.fill();
+      // neck + chibi face
+      const faceCy = shoulderY - 0.6 * hu, chinY = faceCy + 0.44 * hu;
+      const headRx = 0.42 * hu, headRy = 0.48 * hu;
+      ctx.fillStyle = SKIN;
+      ctx.fillRect(cx - 0.1 * hu, chinY - 0.1 * hu, 0.2 * hu, 0.2 * hu);
+      ctx.beginPath();
+      ctx.moveTo(cx - headRx, faceCy);
+      ctx.quadraticCurveTo(cx - headRx, faceCy + 0.38 * hu, cx, chinY);
+      ctx.quadraticCurveTo(cx + headRx, faceCy + 0.38 * hu, cx + headRx, faceCy);
+      ctx.quadraticCurveTo(cx + headRx, faceCy - headRy, cx, faceCy - headRy);
+      ctx.quadraticCurveTo(cx - headRx, faceCy - headRy, cx - headRx, faceCy);
+      ctx.closePath(); ctx.fill();
+      // blush + gentle closed-happy eyes + a small smile (a warm memory)
+      ctx.fillStyle = 'rgba(235,140,130,0.35)';
+      ctx.beginPath(); ctx.ellipse(cx - 0.23 * hu, faceCy + 0.2 * hu, 0.08 * hu, 0.045 * hu, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + 0.23 * hu, faceCy + 0.2 * hu, 0.08 * hu, 0.045 * hu, 0, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#3a2a34'; ctx.lineWidth = 0.045 * hu; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(cx - 0.16 * hu, faceCy + 0.17 * hu, 0.085 * hu, Math.PI * 1.12, Math.PI * 1.88); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx + 0.16 * hu, faceCy + 0.17 * hu, 0.085 * hu, Math.PI * 1.12, Math.PI * 1.88); ctx.stroke();
+      ctx.strokeStyle = '#a35a52'; ctx.lineWidth = 0.03 * hu;
+      ctx.beginPath(); ctx.arc(cx, faceCy + 0.32 * hu, 0.055 * hu, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+      // front hair: crown + scalloped fringe + sidelocks framing the face
+      ctx.fillStyle = HAIR;
+      ctx.beginPath();
+      ctx.moveTo(cx - headRx - 0.02 * hu, faceCy + 0.14 * hu);
+      ctx.quadraticCurveTo(cx - headRx - 0.08 * hu, faceCy - headRy, cx, faceCy - headRy - 0.05 * hu);
+      ctx.quadraticCurveTo(cx + headRx + 0.08 * hu, faceCy - headRy, cx + headRx + 0.02 * hu, faceCy + 0.14 * hu);
+      ctx.quadraticCurveTo(cx + headRx - 0.05 * hu, faceCy + 0.02 * hu, cx + 0.3 * hu, faceCy - 0.08 * hu);
+      ctx.quadraticCurveTo(cx + 0.18 * hu, faceCy - 0.3 * hu, cx + 0.06 * hu, faceCy - 0.1 * hu);
+      ctx.quadraticCurveTo(cx - 0.05 * hu, faceCy - 0.3 * hu, cx - 0.16 * hu, faceCy - 0.1 * hu);
+      ctx.quadraticCurveTo(cx - 0.25 * hu, faceCy - 0.28 * hu, cx - 0.3 * hu, faceCy - 0.08 * hu);
+      ctx.quadraticCurveTo(cx - headRx + 0.05 * hu, faceCy + 0.02 * hu, cx - headRx - 0.02 * hu, faceCy + 0.14 * hu);
+      ctx.closePath(); ctx.fill();
+      ctx.save(); ctx.globalAlpha = 0.45; ctx.fillStyle = HAIR_HI;
+      ctx.beginPath(); ctx.ellipse(cx + 0.1 * hu, faceCy - headRy * 0.7, 0.14 * hu, 0.05 * hu, -0.4, 0, TAU); ctx.fill();
+      ctx.restore();
     };
 
     const girlStand = (cx, footY, p, col = '#aab6d8') => {
       const hu = (p * 11) / 3;
-      ctx.strokeStyle = col; ctx.lineWidth = 0.2 * hu; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(cx - 0.1 * hu, footY - 1.05 * hu); ctx.lineTo(cx - 0.13 * hu, footY); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(cx + 0.1 * hu, footY - 1.05 * hu); ctx.lineTo(cx + 0.13 * hu, footY); ctx.stroke();
-      ctx.fillStyle = col;
+      const sway = Math.sin(A.t * 0.04) * 0.05 * hu;
+      ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineCap = 'round';
+      const hy = footY - 2.42 * hu; // head center
+      // hair, back layer, drifting slightly
       ctx.beginPath();
-      ctx.moveTo(cx - 0.45 * hu, footY - 0.95 * hu);
-      ctx.quadraticCurveTo(cx - 0.28 * hu, footY - 2.0 * hu, cx, footY - 2.05 * hu);
-      ctx.quadraticCurveTo(cx + 0.28 * hu, footY - 2.0 * hu, cx + 0.45 * hu, footY - 0.95 * hu);
+      ctx.moveTo(cx - 0.38 * hu, hy - 0.05 * hu);
+      ctx.quadraticCurveTo(cx - 0.52 * hu + sway, footY - 1.4 * hu, cx - 0.32 * hu + sway, footY - 0.92 * hu);
+      ctx.lineTo(cx + 0.32 * hu + sway, footY - 0.92 * hu);
+      ctx.quadraticCurveTo(cx + 0.52 * hu + sway, footY - 1.4 * hu, cx + 0.38 * hu, hy - 0.05 * hu);
       ctx.closePath(); ctx.fill();
-      const hy = footY - 2.5 * hu;
-      ctx.beginPath(); ctx.arc(cx, hy, 0.4 * hu, 0, TAU); ctx.fill();
+      // legs
+      ctx.lineWidth = 0.13 * hu;
+      ctx.beginPath(); ctx.moveTo(cx - 0.09 * hu, footY - 0.9 * hu); ctx.lineTo(cx - 0.12 * hu, footY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + 0.09 * hu, footY - 0.9 * hu); ctx.lineTo(cx + 0.12 * hu, footY); ctx.stroke();
+      // dress with shoulders and a waist
+      const hipY2 = footY - 0.85 * hu, waistY2 = footY - 1.5 * hu, shY = footY - 1.92 * hu;
       ctx.beginPath();
-      ctx.moveTo(cx - 0.4 * hu, hy);
-      ctx.quadraticCurveTo(cx - 0.54 * hu, footY - 1.55 * hu, cx - 0.3 * hu, footY - 1.12 * hu);
-      ctx.lineTo(cx + 0.3 * hu, footY - 1.12 * hu);
-      ctx.quadraticCurveTo(cx + 0.54 * hu, footY - 1.55 * hu, cx + 0.4 * hu, hy);
+      ctx.moveTo(cx - 0.4 * hu, hipY2);
+      ctx.quadraticCurveTo(cx - 0.28 * hu, waistY2 + 0.12 * hu, cx - 0.18 * hu, waistY2);
+      ctx.lineTo(cx - 0.24 * hu, shY);
+      ctx.quadraticCurveTo(cx, shY - 0.15 * hu, cx + 0.24 * hu, shY);
+      ctx.lineTo(cx + 0.18 * hu, waistY2);
+      ctx.quadraticCurveTo(cx + 0.28 * hu, waistY2 + 0.12 * hu, cx + 0.4 * hu, hipY2);
+      ctx.quadraticCurveTo(cx, hipY2 + 0.14 * hu, cx - 0.4 * hu, hipY2);
       ctx.closePath(); ctx.fill();
+      // neck + head
+      ctx.fillRect(cx - 0.07 * hu, hy + 0.28 * hu, 0.14 * hu, 0.24 * hu);
+      ctx.beginPath(); ctx.arc(cx, hy, 0.38 * hu, 0, TAU); ctx.fill();
     };
 
     // "좀 늦었지" — hurrying beneath the station clock, hands racing
@@ -1172,11 +1236,6 @@ export default function ComeOverVisuals({
       // the two of them, close together
       idolSit(bxc - px * 2.2, seatY - px * 0.3, px * 0.95, { dangle: true });
       girlSit(bxc + px * 2.3, seatY - px * 0.3, px * 0.95);
-      ctx.strokeStyle = 'rgba(255,200,140,0.5)'; ctx.lineWidth = Math.max(1, px * 0.2);
-      const ghu = (px * 0.95 * 11) / 3;
-      ctx.beginPath();
-      ctx.arc(bxc + px * 2.3 - 0.05 * ghu, seatY - px * 0.3 - 1.5 * ghu, 0.42 * ghu, -Math.PI * 0.75, -Math.PI * 0.05);
-      ctx.stroke();
       // remembered fireflies drifting up
       for (let i = 0; i < 9; i += 1) {
         const ph = ((A.t * 0.004) + i / 9) % 1;
