@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Play, Pause, RotateCcw, SkipBack, SkipForward, Music4 } from 'lucide-react';
 import ComeOverVisuals from './components/ComeOverVisuals.jsx';
 import { SONG, TRANSLATION_LANGS, RTL_LANGS } from './data/lyrics.js';
@@ -11,9 +11,9 @@ import { useFitSingleLine } from './hooks/useFitSingleLine.js';
 const SUNG = '#fcd34d'; // warm amber for the original line
 const SUNG_RO = '#67e8f9'; // cool cyan for the romanization
 const TOTAL = SONG.lines.length;
-// Extra subtitle languages (beyond original/romanization/EN). Kept short so the
-// list never pushes the controls off-screen; nothing is deleted from the data.
-const GRID_LANGS = ['JA', 'ZH', 'ES', 'FR', 'RU', 'AR'].filter((c) => TRANSLATION_LANGS.includes(c));
+// Every translation language (beyond the EN primary row). The list area
+// scrolls on small screens, so nothing gets cut — and nothing is deleted.
+const GRID_LANGS = TRANSLATION_LANGS.filter((c) => c !== 'EN');
 
 const clampBpm = (v) => Math.min(200, Math.max(40, parseInt(v, 10) || SONG.defaultBpm));
 
@@ -167,18 +167,19 @@ export default function App() {
           </div>
         </div>
 
-        {/* --- Lyrics (current display segment only) --- */}
-        <div className="relative z-10 flex min-h-0 flex-grow flex-col px-4 pt-2">
+        {/* --- Lyrics (current display segment only) ---
+            One keyed container for karaoke + subtitles: they can never fall out
+            of sync, and the enter-only fade stays calm (no exit queueing, no
+            upward pop) no matter how fast the user skips around. */}
+        <motion.div
+          key={segment?.id ?? 'none'}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: reduced ? 0.001 : 0.3, ease: 'easeOut' }}
+          className="relative z-10 flex min-h-0 flex-grow flex-col px-4 pt-2"
+        >
           <div className="lyric-segment flex-shrink-0" style={{ textShadow: '0 4px 18px rgba(0,0,0,0.85)' }}>
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={segment?.id ?? 'none'}
-                initial={reduced ? { opacity: 0 } : { opacity: 0, y: 10, filter: 'blur(5px)' }}
-                animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0, filter: 'blur(0px)' }}
-                exit={reduced ? { opacity: 0 } : { opacity: 0, y: -8, filter: 'blur(4px)' }}
-                transition={{ duration: reduced ? 0.001 : 0.22, ease: [0.22, 1, 0.36, 1] }}
-                className="w-full"
-              >
+            <div className="w-full">
                 {segment && (
                   <>
                     <KaraokeLine
@@ -217,38 +218,28 @@ export default function App() {
                     )}
                   </>
                 )}
-              </motion.div>
-            </AnimatePresence>
+            </div>
           </div>
 
           {/* Other-language subtitles — one fitted, never-truncated line each */}
           <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto border-t border-white/10 pt-1.5">
-            <ul className="space-y-1 text-left">
-              <AnimatePresence initial={false}>
-                {otherLangs.map((code) => (
-                  <motion.li
-                    key={`${segment.id}-${code}`}
-                    initial={reduced ? { opacity: 0 } : { opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: reduced ? 0.001 : 0.18 }}
-                    className="flex items-baseline gap-2"
-                  >
-                    <span className="w-8 flex-shrink-0 text-right text-[11px] font-bold text-amber-200/70">{code}</span>
-                    <FitLine
-                      text={segment.t[code]}
-                      dir={RTL_LANGS.includes(code) ? 'rtl' : 'ltr'}
-                      className="min-w-0 flex-1 text-white/85"
-                      style={{ textAlign: RTL_LANGS.includes(code) ? 'right' : 'left' }}
-                      minPx={11}
-                      maxPx={14}
-                    />
-                  </motion.li>
-                ))}
-              </AnimatePresence>
+            <ul className="space-y-0.5 text-left">
+              {otherLangs.map((code) => (
+                <li key={code} className="flex items-baseline gap-2">
+                  <span className="w-8 flex-shrink-0 text-right text-[11px] font-bold text-amber-200/70">{code}</span>
+                  <FitLine
+                    text={segment.t[code]}
+                    dir={RTL_LANGS.includes(code) ? 'rtl' : 'ltr'}
+                    className="min-w-0 flex-1 text-white/85"
+                    style={{ textAlign: RTL_LANGS.includes(code) ? 'right' : 'left' }}
+                    minPx={11}
+                    maxPx={14}
+                  />
+                </li>
+              ))}
             </ul>
           </div>
-        </div>
+        </motion.div>
 
         {/* --- Controls --- */}
         <div className="relative z-20 flex-shrink-0 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2">

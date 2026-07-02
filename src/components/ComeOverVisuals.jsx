@@ -34,7 +34,7 @@ export default function ComeOverVisuals({
 
   const A = useRef({
     stars: [], drops: [], splashes: [], ripples: [], smoke: [], motes: [], clouds: [], skyline: [],
-    ghosts: [], pages: [], dust: [],
+    ghosts: [], pages: [], dust: [], oarRipples: [],
     wanderer: { x: 0, knockArm: 0, walk: 0 },
     beat: 0, flash: 0,
     doorGlow: 0.65, doorGlowTarget: 0.65, doorOpen: 0, doorOpenTarget: 0,
@@ -42,7 +42,7 @@ export default function ComeOverVisuals({
     rowStroke: 0, headBow: 0, heartPulse: 0, cameraShake: 0, drift: 0, driftTarget: 0,
     sceneCur: null, veil: 0, transitionType: 'dissolve',
     pendingEvent: null, lastEventId: null,
-    layout: null, t: 0,
+    layout: null, vig: null, t: 0,
   }).current;
 
   const playingRef = useRef(isPlaying);
@@ -89,6 +89,7 @@ export default function ComeOverVisuals({
         sx += bw + 4 + Math.random() * 12;
       }
       A.splashes = []; A.ripples = []; A.smoke = []; A.motes = [];
+      A.ghosts = []; A.pages = []; A.dust = []; A.oarRipples = []; A.vig = null;
     };
 
     // --- chibi idol character (shared head, standing/walking, knock, seated) ---
@@ -149,7 +150,17 @@ export default function ComeOverVisuals({
     };
 
     const idol = (cx, footY, p, { walk = null, knock = 0 } = {}) => {
-      const H = p * 11, hu = H / 3, topY = footY - H;
+      const H = p * 11, hu = H / 3;
+      // gait: hips bob while the feet stay planted; idle gets a breathing sway.
+      const bob = walk != null ? Math.abs(Math.sin(walk)) * 0.05 * hu : Math.sin(A.t * 0.045) * 0.016 * hu;
+      const topY = footY - H - bob;
+      ctx.save();
+      if (walk != null) {
+        // slight forward lean into the stride
+        ctx.translate(cx, footY);
+        ctx.rotate(0.045);
+        ctx.translate(-cx, -footY);
+      }
       const faceCy = topY + 0.54 * hu, chinY = topY + 1.0 * hu, shoulderY = topY + 1.12 * hu;
       const waistY = topY + 1.62 * hu, hipY = topY + 1.95 * hu, coatHemY = topY + 2.15 * hu;
       const shHalf = 0.5 * hu, waistHalf = 0.44 * hu, hemHalf = 0.54 * hu, legHalf = 0.15 * hu;
@@ -201,6 +212,7 @@ export default function ComeOverVisuals({
       ctx.moveTo(cx + shHalf * 0.96, shoulderY);
       ctx.quadraticCurveTo(cx + hemHalf * 0.98, waistY, cx + hemHalf * 0.94, coatHemY);
       ctx.stroke();
+      ctx.restore();
     };
 
     const idolSit = (cx, hipY, p, { dangle = false, noLegs = false } = {}) => {
@@ -245,9 +257,9 @@ export default function ComeOverVisuals({
       ctx.moveTo(cx - 0.34 * hu, chinY - 0.05 * hu); ctx.lineTo(cx + 0.34 * hu, chinY - 0.05 * hu);
       ctx.lineTo(cx + 0.22 * hu, shoulderY + 0.2 * hu); ctx.lineTo(cx - 0.22 * hu, shoulderY + 0.2 * hu); ctx.closePath(); ctx.fill();
       ctx.fillRect(cx + 0.02 * hu, shoulderY + 0.05 * hu, 0.16 * hu, 0.42 * hu);
-      // neck + head
+      // neck + head (with a soft breathing bob)
       ctx.fillStyle = PAL.skin; ctx.fillRect(cx - 0.12 * hu, chinY - 0.12 * hu, 0.24 * hu, 0.22 * hu);
-      idolHead(cx, faceCy, hu);
+      idolHead(cx, faceCy + Math.sin(A.t * 0.05) * 0.02 * hu, hu);
     };
 
     const stars = (alpha) => {
@@ -262,7 +274,7 @@ export default function ComeOverVisuals({
 
     const moon = (x, y, r) => {
       const halo = ctx.createRadialGradient(x, y, r * 0.4, x, y, r * 4.5);
-      halo.addColorStop(0, 'rgba(226,232,240,0.4)');
+      halo.addColorStop(0, `rgba(226,232,240,${0.34 + 0.06 * Math.sin(A.t * 0.02)})`);
       halo.addColorStop(1, 'rgba(226,232,240,0)');
       ctx.fillStyle = halo;
       ctx.fillRect(0, 0, A.layout.w, A.layout.h);
@@ -288,13 +300,30 @@ export default function ComeOverVisuals({
       const { w } = A.layout;
       A.clouds.forEach((c) => {
         if (playing) { c.x += c.sp; if (c.x - c.s * 3 > w) c.x = -c.s * 3; }
-        ctx.fillStyle = color;
+        // soft-edged puffs: radial falloff instead of hard ellipses
+        const faded = color.replace(/[\d.]+\)$/u, '0)');
         [[0, 0, 1], [c.s * 1.3, c.s * 0.2, 0.8], [-c.s * 1.2, c.s * 0.25, 0.75]].forEach(([dx, dy, sc]) => {
+          const r = c.s * sc;
+          const g = ctx.createRadialGradient(c.x + dx, c.y + dy, r * 0.25, c.x + dx, c.y + dy, r * 1.15);
+          g.addColorStop(0, color);
+          g.addColorStop(1, faded);
+          ctx.fillStyle = g;
           ctx.beginPath();
-          ctx.ellipse(c.x + dx, c.y + dy, c.s * sc, c.s * 0.62 * sc, 0, 0, TAU);
+          ctx.ellipse(c.x + dx, c.y + dy, r * 1.15, r * 0.72, 0, 0, TAU);
           ctx.fill();
         });
       });
+    };
+
+    // A light source reflected on wet ground: a fading vertical streak whose
+    // width shimmers slowly, so night streets read as rain-slicked.
+    const wetGlow = (x, topY, width, height, colorPrefix, alpha = 0.25, phase = 0) => {
+      const g = ctx.createLinearGradient(0, topY, 0, topY + height);
+      g.addColorStop(0, `${colorPrefix}${alpha})`);
+      g.addColorStop(1, `${colorPrefix}0)`);
+      ctx.fillStyle = g;
+      const wob = 1 + Math.sin(A.t * 0.04 + phase) * 0.14;
+      ctx.fillRect(x - (width * wob) / 2, topY, width * wob, height);
     };
 
     const litSkyline = (baseY, scale, winColor) => {
@@ -314,25 +343,34 @@ export default function ComeOverVisuals({
     const rain = (intensity, playing, color = 'rgba(180,200,235,') => {
       const { w, groundY } = A.layout;
       const reduced = reducedRef.current;
-      ctx.strokeStyle = `${color}${0.3 * (0.4 + intensity)})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      A.drops.forEach((d, i) => {
-        if (intensity < 0.4 && i % 2 === 0) return;
-        if (reduced && i % 2 === 0) return; // ~50% fewer drops
-        ctx.moveTo(d.x, d.y);
-        ctx.lineTo(d.x - d.len * 0.28 * (0.6 + intensity), d.y - d.len * (0.6 + intensity));
-        if (playing) {
-          d.y += d.sp * (0.5 + intensity);
-          d.x += d.sp * 0.28;
-          if (d.y > groundY) {
-            if (Math.random() < 0.4 * intensity) A.splashes.push({ x: d.x, y: groundY, r: 0, life: 1 });
-            d.y = -10;
-            d.x = Math.random() * (w + 60) - 30;
+      const sway = Math.sin(A.t * 0.011) * 0.14; // slow wind drift in the streak angle
+      // two depth layers: far = thin/slow/faint, near = thicker/faster/brighter
+      for (let layer = 0; layer < 2; layer += 1) {
+        const near = layer === 1;
+        ctx.strokeStyle = `${color}${(near ? 0.34 : 0.15) * (0.4 + intensity)})`;
+        ctx.lineWidth = near ? 1.4 : 1;
+        ctx.beginPath();
+        A.drops.forEach((d, i) => {
+          if ((i % 2 === 0) !== near) return; // disjoint halves per layer
+          if (intensity < 0.4 && i % 4 === 0) return;
+          if (reduced && i % 3 !== 0) return; // ~2/3 fewer drops
+          const fall = near ? 1 : 0.55;
+          const len = d.len * (0.6 + intensity) * fall;
+          ctx.moveTo(d.x, d.y);
+          ctx.lineTo(d.x - len * (0.28 + sway), d.y - len);
+          if (playing) {
+            d.y += d.sp * (0.5 + intensity) * fall;
+            d.x += d.sp * (0.28 + sway) * fall;
+            if (d.y > groundY) {
+              if (near && Math.random() < 0.5 * intensity) A.splashes.push({ x: d.x, y: groundY, r: 0, life: 1 });
+              d.y = -10;
+              d.x = Math.random() * (w + 60) - 30;
+            }
           }
-        }
-      });
-      ctx.stroke();
+        });
+        ctx.stroke();
+      }
+      if (A.splashes.length > 70) A.splashes.splice(0, A.splashes.length - 70);
       A.splashes = A.splashes.filter((s) => s.life > 0);
       A.splashes.forEach((s) => {
         if (playing) { s.life -= 0.06; s.r += 0.8; }
@@ -362,20 +400,21 @@ export default function ComeOverVisuals({
       ctx.fillRect(0, groundY, w, h - groundY);
       [0.34, 0.66].forEach((lx) => {
         const x = w * lx, lampY = groundY - h * 0.34;
+        const flick = 0.86 + 0.14 * (0.5 + 0.5 * Math.sin(A.t * 0.17 + x));
         ctx.fillStyle = '#0a1024';
         ctx.fillRect(x - px * 0.4, lampY, px * 0.8, h * 0.34);
         const cone = ctx.createLinearGradient(x, lampY, x, groundY);
-        cone.addColorStop(0, 'rgba(255,219,150,0.4)');
+        cone.addColorStop(0, `rgba(255,219,150,${0.42 * flick})`);
         cone.addColorStop(1, 'rgba(255,219,150,0)');
         ctx.fillStyle = cone;
         ctx.beginPath();
         ctx.moveTo(x - px, lampY); ctx.lineTo(x - px * 6, groundY); ctx.lineTo(x + px * 6, groundY); ctx.lineTo(x + px, lampY); ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = '#fff0c8';
+        ctx.fillStyle = `rgba(255,240,200,${0.7 + 0.3 * flick})`;
         ctx.fillRect(x - px, lampY - px, px * 2, px * 1.6);
-        ctx.fillStyle = 'rgba(255,219,150,0.16)';
-        ctx.fillRect(x - px * 4, groundY, px * 8, h - groundY);
+        wetGlow(x, groundY, px * 9, h - groundY, 'rgba(255,219,150,', 0.2 * flick, x);
       });
+      wetGlow(w * 0.16, groundY, px * 7, (h - groundY) * 0.9, 'rgba(226,232,240,', 0.12, 1);
       if (playing) { A.wanderer.x += Math.max(1, w * 0.0028); A.wanderer.walk += 0.22; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
       idol(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
       rain(0.6, playing);
@@ -390,7 +429,9 @@ export default function ComeOverVisuals({
       ctx.fillStyle = '#5aa05a';
       ctx.fillRect(0, groundY, w, h - groundY);
       ctx.fillStyle = '#4c9050';
-      for (let x = 0; x < w; x += px * 2) ctx.fillRect(x, groundY, px, -px * (1 + ((x * 7) % 3)));
+      for (let x = 0; x < w; x += px * 2) {
+        ctx.fillRect(x, groundY, px, -px * (1 + ((x * 7) % 3) + 0.5 * Math.sin(A.t * 0.05 + x * 0.25)));
+      }
       // bright house
       const hw = w * 0.26, hh = h * 0.34, hx = w * 0.6, hy = groundY - hh;
       ctx.fillStyle = '#f1ede2';
@@ -491,7 +532,8 @@ export default function ComeOverVisuals({
       ctx.fillStyle = '#0a1126';
       ctx.fillRect(w * 0.08, wy, w * 0.84, wh);
       for (let i = 0; i < 26; i++) {
-        const x = w * 0.08 + ((i * 53 + A.t * 6) % (w * 0.84));
+        const sp = i % 2 ? 6.5 : 3.2; // near lights streak past faster than far ones
+        const x = w * 0.08 + ((i * 53 + A.t * sp) % (w * 0.84));
         ctx.fillStyle = `rgba(${i % 3 ? 255 : 150},${i % 2 ? 210 : 230},${i % 3 ? 150 : 255},0.8)`;
         ctx.fillRect(x, wy + (wh * 0.3) + ((i * 31) % (wh * 0.5)), px, px * (1 + (i % 3)));
       }
@@ -572,6 +614,7 @@ export default function ComeOverVisuals({
         ctx.fillStyle = og;
         ctx.fillRect(dx, dy, ow, dh);
       }
+      wetGlow(dcx, groundY, dw * 1.5, h - groundY, 'rgba(255,190,100,', 0.24 * g + A.doorOpen * 0.14, 2);
       A.ripples = A.ripples.filter((rp) => rp.life > 0);
       A.ripples.forEach((rp) => {
         if (playing) { rp.life -= 0.04; rp.r += (rp.max - rp.r) * 0.08; }
@@ -601,20 +644,21 @@ export default function ComeOverVisuals({
         ctx.fillRect(b.x, groundY - bh, b.w, bh);
         const col = colors[bi % colors.length];
         const sy = groundY - bh + 10 + (bi % 3) * 14;
+        // every 4th sign is a faulty tube that stutters
+        const on = bi % 4 === 2 ? (Math.sin(A.t * 0.31 + bi * 7) > -0.15 ? 1 : 0.25) : 1;
         const glow = ctx.createRadialGradient(b.x + b.w / 2, sy, 0, b.x + b.w / 2, sy, b.w);
-        glow.addColorStop(0, `rgba(${col},0.7)`);
+        glow.addColorStop(0, `rgba(${col},${0.7 * on})`);
         glow.addColorStop(1, `rgba(${col},0)`);
         ctx.fillStyle = glow;
         ctx.fillRect(b.x - 10, sy - 14, b.w + 20, 28);
-        ctx.fillStyle = `rgba(${col},0.95)`;
+        ctx.fillStyle = `rgba(${col},${0.95 * on})`;
         ctx.fillRect(b.x + 6, sy, b.w - 12, px);
       });
       // wet street with colorful reflections
       ctx.fillStyle = '#0c0a1c';
       ctx.fillRect(0, groundY, w, h - groundY);
       A.skyline.forEach((b, bi) => {
-        ctx.fillStyle = `rgba(${colors[bi % colors.length]},0.12)`;
-        ctx.fillRect(b.x, groundY, b.w, h - groundY);
+        wetGlow(b.x + b.w / 2, groundY, b.w * 0.9, h - groundY, `rgba(${colors[bi % colors.length]},`, 0.14, bi);
       });
       // 'blood-pulse' cue — wet-floor reflection flushes red briefly.
       if (A.redPulse > 0.01) {
@@ -709,6 +753,20 @@ export default function ComeOverVisuals({
       ctx.lineTo(px * 9 * Math.cos(stroke), px * 9 * Math.sin(stroke) + px);
       ctx.stroke();
       ctx.restore();
+      // oar ripples ride the waterline on each row stroke
+      if (playing && A.rowStroke > 0.55 && A.t % 5 === 0 && A.oarRipples.length < 8) {
+        const tipX = bx + px * 9 * Math.cos(stroke);
+        A.oarRipples.push({ x: tipX, y: wave(tipX) + 1, r: px * 0.8, life: 1 });
+      }
+      A.oarRipples = A.oarRipples.filter((rp) => rp.life > 0);
+      A.oarRipples.forEach((rp) => {
+        if (playing) { rp.r += 0.7; rp.life -= 0.028; }
+        ctx.strokeStyle = `rgba(205,225,255,${Math.max(0, rp.life) * 0.45})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(rp.x, rp.y, rp.r * 1.7, rp.r * 0.5, 0, 0, TAU);
+        ctx.stroke();
+      });
       rain(0.25, playing);
     };
 
@@ -1002,6 +1060,19 @@ export default function ComeOverVisuals({
         ctx.fillStyle = `rgba(255,200,130,${A.dawn * 0.12})`;
         ctx.fillRect(0, 0, L.w, L.h);
       }
+
+      // cached edge vignette — cinematic depth at zero per-frame gradient cost
+      if (!A.vig || A.vig.w !== L.w || A.vig.h !== L.h) {
+        const vg = ctx.createRadialGradient(
+          L.w / 2, L.h * 0.55, Math.min(L.w, L.h) * 0.5,
+          L.w / 2, L.h * 0.55, Math.max(L.w, L.h) * 0.92,
+        );
+        vg.addColorStop(0, 'rgba(0,0,0,0)');
+        vg.addColorStop(1, 'rgba(2,4,12,0.34)');
+        A.vig = { w: L.w, h: L.h, g: vg };
+      }
+      ctx.fillStyle = A.vig.g;
+      ctx.fillRect(0, 0, L.w, L.h);
 
       drawTransitionOverlay();
       rafRef.current = requestAnimationFrame(draw);
