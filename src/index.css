@@ -50,11 +50,11 @@ input[type='number'] {
 
 /* Stable lyric block height so segment swaps don't jolt the layout. */
 .lyric-segment {
-  min-height: 7.75rem;
+  min-height: 4.75rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.375rem;
 }
 
 .player-shell {

@@ -140,7 +140,20 @@ export default function App() {
   const otherLangs = segment
     ? GRID_LANGS.filter((c) => segment.t[c] && segment.t[c] !== segment.o)
     : [];
-  const primaryEn = segment && segment.t.EN && segment.t.EN !== segment.o ? segment.t.EN : null;
+  // Hide the EN row when it would just repeat the sung line (English-sung
+  // segments): compare letters only, and treat near-total overlap as a dupe.
+  const norm = (s) => String(s ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+  const primaryEn = (() => {
+    if (!segment?.t?.EN) return null;
+    const nE = norm(segment.t.EN), nO = norm(segment.o);
+    if (!nE || nE === nO) return null;
+    if (nE.includes(nO) && nO.length >= nE.length * 0.6) return null;
+    if (nO.includes(nE) && nE.length >= nO.length * 0.6) return null;
+    return segment.t.EN;
+  })();
+  // English-only segments of mixed lines have a romanization identical to the
+  // original — showing it would be a third copy of the same words.
+  const showRoman = segment?.hasR && segment.r && segment.r !== segment.o;
 
   return (
     <div className="player-shell flex w-full items-center justify-center bg-black">
@@ -191,10 +204,10 @@ export default function App() {
                       fitKey={segment.o}
                       pick={(w) => w.o}
                       className="font-bold tracking-tight"
-                      minPx={16}
-                      maxPx={30}
+                      minPx={14}
+                      maxPx={23}
                     />
-                    {segment.hasR && segment.r && (
+                    {showRoman && (
                       <KaraokeLine
                         words={segment.words}
                         upTo={wordIndex}
@@ -203,17 +216,17 @@ export default function App() {
                         reduced={reduced}
                         fitKey={segment.r}
                         pick={(w) => w.r}
-                        className="mt-1 font-medium"
-                        minPx={11}
-                        maxPx={17}
+                        className="mt-0.5 font-medium"
+                        minPx={10}
+                        maxPx={14}
                       />
                     )}
                     {primaryEn && (
                       <FitLine
                         text={primaryEn}
-                        className="mt-1.5 text-white/85"
-                        minPx={11}
-                        maxPx={16}
+                        className="mt-1 text-white/85"
+                        minPx={10}
+                        maxPx={14}
                       />
                     )}
                   </>
@@ -231,7 +244,7 @@ export default function App() {
                     text={segment.t[code]}
                     dir={RTL_LANGS.includes(code) ? 'rtl' : 'ltr'}
                     className="min-w-0 flex-1 text-white/85"
-                    style={{ textAlign: RTL_LANGS.includes(code) ? 'right' : 'left' }}
+                    style={{ textAlign: 'left' }}
                     minPx={11}
                     maxPx={14}
                   />
