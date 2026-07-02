@@ -457,7 +457,7 @@ export default function ComeOverVisuals({
         wetGlow(x, groundY, px * 9, h - groundY, 'rgba(255,219,150,', 0.2 * flick, x);
       });
       wetGlow(w * 0.16, groundY, px * 7, (h - groundY) * 0.9, 'rgba(226,232,240,', 0.12, 1);
-      if (playing) { A.wanderer.x += Math.max(1, w * 0.0028); A.wanderer.walk += 0.22; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
+      if (playing) { A.wanderer.x += Math.max(0.45, w * 0.0016); A.wanderer.walk += 0.115; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
       idol(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
       rain(0.6, playing);
     };
@@ -486,7 +486,7 @@ export default function ComeOverVisuals({
       ctx.fillRect(hx + hw * 0.14, hy + hh * 0.2, hw * 0.24, hh * 0.24);
       ctx.fillStyle = '#7a4a2a';
       ctx.fillRect(hx + hw * 0.56, groundY - hh * 0.48, hw * 0.24, hh * 0.48);
-      if (playing) { A.wanderer.x += Math.max(1, w * 0.0026); A.wanderer.walk += 0.22; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
+      if (playing) { A.wanderer.x += Math.max(0.45, w * 0.0015); A.wanderer.walk += 0.115; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
       idol(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
     };
 
@@ -512,7 +512,7 @@ export default function ComeOverVisuals({
       ctx.fillRect(0, groundY, w, h - groundY);
       ctx.fillStyle = 'rgba(210,220,255,0.28)'; // crosswalk under the moon
       for (let x = w * 0.1; x < w * 0.9; x += px * 5) ctx.fillRect(x, groundY + px * 2, px * 3, px);
-      if (playing) { A.wanderer.x += Math.max(1, w * 0.003); A.wanderer.walk += 0.24; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
+      if (playing) { A.wanderer.x += Math.max(0.45, w * 0.0017); A.wanderer.walk += 0.12; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
       idol(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
       rain(0.3, playing);
     };
@@ -688,7 +688,7 @@ export default function ComeOverVisuals({
         walk: arriving ? A.wanderer.walk : null,
         look: 1, // he keeps facing the door
       });
-      if (playing && arriving) A.wanderer.walk += 0.16;
+      if (playing && arriving) A.wanderer.walk += 0.1;
       rain(0.55, playing);
     };
 
@@ -724,7 +724,7 @@ export default function ComeOverVisuals({
         ctx.fillStyle = `rgba(180,30,46,${A.redPulse * 0.28})`;
         ctx.fillRect(0, groundY, w, h - groundY);
       }
-      if (playing) { A.wanderer.x += Math.max(1, w * 0.0026); A.wanderer.walk += 0.22; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
+      if (playing) { A.wanderer.x += Math.max(0.45, w * 0.0015); A.wanderer.walk += 0.115; if (A.wanderer.x > w + figW) A.wanderer.x = -figW; }
       idol(A.wanderer.x, groundY, px, { walk: A.wanderer.walk });
       rain(0.75, playing, 'rgba(200,180,240,');
     };
