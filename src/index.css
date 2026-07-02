@@ -82,3 +82,9 @@ input:focus-visible {
     animation-duration: 1ms !important;
   }
 }
+
+/* Soft fade at the bottom of the scrolling subtitle list */
+.list-fade {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent);
+}

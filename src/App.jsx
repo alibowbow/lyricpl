@@ -235,7 +235,7 @@ export default function App() {
           </div>
 
           {/* Other-language subtitles — one fitted, never-truncated line each */}
-          <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto border-t border-white/10 pt-1.5">
+          <div className="no-scrollbar list-fade min-h-0 flex-1 overflow-y-auto border-t border-white/10 pt-1.5">
             <ul className="space-y-0.5 text-left">
               {otherLangs.map((code) => (
                 <li key={code} className="flex items-baseline gap-2">

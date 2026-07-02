@@ -93,6 +93,19 @@ export default function ComeOverVisuals({
       A.ghosts = []; A.pages = []; A.dust = []; A.oarRipples = []; A.vig = null;
     };
 
+    // soft elliptical ground shadow (radial falloff, no hard edge)
+    const softShadow = (cx, y, rx, ry, alpha = 0.36) => {
+      ctx.save();
+      ctx.translate(cx, y);
+      ctx.scale(1, ry / rx);
+      const g = ctx.createRadialGradient(0, 0, rx * 0.15, 0, 0, rx);
+      g.addColorStop(0, `rgba(0,0,0,${alpha})`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(0, 0, rx, 0, TAU); ctx.fill();
+      ctx.restore();
+    };
+
     // --- chibi idol character (shared head, standing/walking, knock, seated) ---
     const idolHead = (cx, faceCy, hu, look = 0) => {
       const topY = faceCy - 0.54 * hu, chinY = faceCy + 0.46 * hu;
@@ -198,8 +211,7 @@ export default function ComeOverVisuals({
       const waistY = topY + 1.62 * hu, hipY = topY + 1.95 * hu, coatHemY = topY + 2.15 * hu;
       const shHalf = 0.5 * hu, waistHalf = 0.44 * hu, hemHalf = 0.54 * hu, legHalf = 0.15 * hu;
       // shadow
-      ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath();
-      ctx.ellipse(cx, footY + 1, hemHalf * 1.25, 0.12 * hu, 0, 0, TAU); ctx.fill();
+      softShadow(cx, footY + 1, hemHalf * 1.45, 0.14 * hu);
       // legs + shoes — feet stay narrow, under the body. Walking is a scissor
       // stride along the direction of travel with a small lift on the swinging
       // leg, so he steps instead of sliding sideways like a crab.
@@ -262,8 +274,7 @@ export default function ComeOverVisuals({
       const faceCy = shoulderY - 0.62 * hu, chinY = faceCy + 0.46 * hu;
       const shHalf = 0.5 * hu, hipHalf = 0.52 * hu, legHalf = 0.15 * hu;
       if (!noLegs) {
-        ctx.fillStyle = 'rgba(0,0,0,0.32)'; ctx.beginPath();
-        ctx.ellipse(cx, hipY + (dangle ? 1.5 * hu : 0.62 * hu), 0.55 * hu, 0.12 * hu, 0, 0, TAU); ctx.fill();
+        softShadow(cx, hipY + (dangle ? 1.5 * hu : 0.62 * hu), 0.65 * hu, 0.13 * hu, 0.3);
         ctx.strokeStyle = PAL.pants; ctx.lineWidth = legHalf * 2; ctx.lineCap = 'round';
         if (dangle) {
           ctx.beginPath(); ctx.moveTo(cx - 0.2 * hu, hipY); ctx.lineTo(cx - 0.22 * hu, hipY + 1.35 * hu); ctx.stroke();
@@ -312,6 +323,16 @@ export default function ComeOverVisuals({
         ctx.fillRect(s.x, s.y, s.r, s.r);
       });
       ctx.globalAlpha = 1;
+      // a rare shooting star (once every ~23s), skipped for reduced motion
+      const cyc = A.t % 1400;
+      if (cyc < 26 && alpha > 0.5 && !reducedRef.current) {
+        const p2 = cyc / 26;
+        const sx0 = A.layout.w * (0.72 - p2 * 0.26);
+        const sy0 = A.layout.h * (0.09 + p2 * 0.1);
+        ctx.strokeStyle = `rgba(240,246,255,${(1 - p2) * 0.65 * alpha})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(sx0, sy0); ctx.lineTo(sx0 + 15, sy0 - 6); ctx.stroke();
+      }
     };
 
     const moon = (x, y, r) => {
@@ -551,6 +572,24 @@ export default function ComeOverVisuals({
       ctx.fillRect(wx, wy + wh / 2 - px / 2, ww, px);
       ctx.fillStyle = '#0c1124';
       ctx.fillRect(0, groundY, w, h - groundY);
+      ctx.fillStyle = 'rgba(255,255,255,0.045)';
+      ctx.fillRect(0, groundY, w, px * 0.5);
+      // a potted plant by the window, leaves nodding faintly
+      const plx = w * 0.87;
+      ctx.fillStyle = '#1a2140';
+      ctx.fillRect(plx - px * 1.3, groundY - px * 2.2, px * 2.6, px * 2.2);
+      ctx.strokeStyle = '#22305a'; ctx.lineWidth = Math.max(1, px * 0.35); ctx.lineCap = 'round';
+      [[-1.4, 5.2], [0, 6.2], [1.4, 5.0]].forEach(([dx3, len]) => {
+        ctx.beginPath();
+        ctx.moveTo(plx, groundY - px * 2);
+        ctx.quadraticCurveTo(plx + dx3 * px, groundY - px * (2 + len * 0.6), plx + dx3 * px * 1.6 + Math.sin(A.t * 0.02 + dx3) * px * 0.3, groundY - px * (2 + len * 0.9));
+        ctx.stroke();
+      });
+      // a small framed photo on the wall
+      ctx.fillStyle = '#232c50';
+      ctx.fillRect(w * 0.18, h * 0.28, px * 3.2, px * 2.4);
+      ctx.fillStyle = '#111830';
+      ctx.fillRect(w * 0.18 + px * 0.4, h * 0.28 + px * 0.4, px * 2.4, px * 1.6);
       const fx = w * 0.22;
       idolSit(fx, groundY - px * 0.5, px, {});
       const pg = 0.6 + 0.4 * Math.max(A.beat, A.phoneGlow);
@@ -589,6 +628,16 @@ export default function ComeOverVisuals({
       ctx.fillRect(w * 0.08, wy - px, w * 0.84, px);
       ctx.fillRect(w * 0.08, wy + wh, w * 0.84, px);
       ctx.fillRect(w * 0.5 - px, wy, px * 2, wh);
+      // hanging straps swaying with the carriage
+      ctx.strokeStyle = '#2c3654'; ctx.lineWidth = Math.max(1, px * 0.3); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(w * 0.1, h * 0.08); ctx.lineTo(w * 0.9, h * 0.08); ctx.stroke();
+      for (let i = 0; i < 4; i += 1) {
+        const hx2 = w * (0.2 + i * 0.2);
+        const ang = Math.sin(A.t * 0.026 + i * 1.7) * 0.16;
+        const ex2 = hx2 + Math.sin(ang) * px * 3.4, ey2 = h * 0.08 + Math.cos(ang) * px * 3.4;
+        ctx.beginPath(); ctx.moveTo(hx2, h * 0.08); ctx.lineTo(ex2, ey2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(ex2, ey2 + px * 0.8, px * 0.8, 0, TAU); ctx.stroke();
+      }
       // bench
       ctx.fillStyle = '#243150';
       ctx.fillRect(0, groundY - px * 2, w, h - groundY + px * 2);
@@ -612,6 +661,26 @@ export default function ComeOverVisuals({
       ctx.fillRect(0, groundY, w, h - groundY);
       ctx.fillStyle = '#111830';
       ctx.fillRect(0, groundY - px, w, px);
+      // rooftop furniture: water tank on stilts, an AC unit, a safety rail
+      ctx.fillStyle = '#0d142c';
+      ctx.fillRect(w * 0.72, groundY - px * 7.5, px * 6.5, px * 5.5);
+      ctx.beginPath(); ctx.ellipse(w * 0.72 + px * 3.25, groundY - px * 7.5, px * 3.25, px, 0, 0, TAU); ctx.fill();
+      ctx.fillRect(w * 0.73, groundY - px * 2, px * 0.8, px * 2);
+      ctx.fillRect(w * 0.72 + px * 5, groundY - px * 2, px * 0.8, px * 2);
+      ctx.fillStyle = '#101838';
+      ctx.fillRect(w * 0.55, groundY - px * 3, px * 4.5, px * 3);
+      ctx.strokeStyle = '#0a1024'; ctx.lineWidth = Math.max(1, px * 0.25);
+      for (let i2 = 1; i2 < 4; i2 += 1) {
+        ctx.beginPath();
+        ctx.moveTo(w * 0.55 + px * 0.5, groundY - px * 3 + (px * 3 * i2) / 4);
+        ctx.lineTo(w * 0.55 + px * 4, groundY - px * 3 + (px * 3 * i2) / 4);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = '#141c3a'; ctx.lineWidth = Math.max(1.5, px * 0.3);
+      ctx.beginPath(); ctx.moveTo(w * 0.48, groundY - px * 4.6); ctx.lineTo(w, groundY - px * 4.6); ctx.stroke();
+      for (let rx2 = w * 0.5; rx2 < w; rx2 += px * 4) {
+        ctx.beginPath(); ctx.moveTo(rx2, groundY - px * 4.6); ctx.lineTo(rx2, groundY); ctx.stroke();
+      }
       // figure sitting on the ledge, legs dangling
       idolSit(w * 0.3, groundY, px, { dangle: true });
     };
@@ -804,6 +873,16 @@ export default function ComeOverVisuals({
       ctx.moveTo(-px * 8, 0); ctx.lineTo(px * 8, 0); ctx.lineTo(px * 5, px * 3); ctx.lineTo(-px * 5, px * 3); ctx.closePath();
       ctx.fill();
       idolSit(0, -px * 0.5, px, { noLegs: true });
+      // a small bow lantern, glowing against the dark water
+      ctx.fillStyle = '#0a0b16';
+      ctx.fillRect(px * 6.4, -px * 4.6, px * 0.5, px * 2.6);
+      const lg4 = ctx.createRadialGradient(px * 6.65, -px * 5.2, 0, px * 6.65, -px * 5.2, px * 4);
+      lg4.addColorStop(0, 'rgba(255,206,120,0.5)');
+      lg4.addColorStop(1, 'rgba(255,206,120,0)');
+      ctx.fillStyle = lg4;
+      ctx.fillRect(px * 2.5, -px * 9.2, px * 8.5, px * 8);
+      ctx.fillStyle = `rgba(255,226,150,${0.75 + 0.25 * Math.sin(A.t * 0.09)})`;
+      ctx.fillRect(px * 6.3, -px * 5.7, px * 0.8, px);
       const stroke = Math.sin(A.t * 0.06) * (0.5 + A.rowStroke * 0.6);
       ctx.strokeStyle = RIM;
       ctx.lineWidth = Math.max(2, px * 0.7);
@@ -812,6 +891,12 @@ export default function ComeOverVisuals({
       ctx.lineTo(px * 9 * Math.cos(stroke), px * 9 * Math.sin(stroke) + px);
       ctx.stroke();
       ctx.restore();
+      // the lantern's warm shimmer on the water below the bow
+      ctx.fillStyle = 'rgba(255,206,120,0.16)';
+      for (let y2 = by + px; y2 < h * 0.92; y2 += px * 2) {
+        const ww2 = px * (1 + 2 * Math.abs(Math.sin(y2 * 0.25 + A.t * 0.05)));
+        ctx.fillRect(bx + px * 6.5 - ww2 / 2, y2, ww2, px * 0.7);
+      }
       // oar ripples ride the waterline on each row stroke
       if (playing && A.rowStroke > 0.55 && A.t % 5 === 0 && A.oarRipples.length < 8) {
         const tipX = bx + px * 9 * Math.cos(stroke);
@@ -851,6 +936,18 @@ export default function ComeOverVisuals({
         const ww = px * (3 + 5 * Math.abs(Math.sin(y * 0.18 + A.t * 0.06)));
         ctx.fillRect(sxp - ww / 2, y, ww, px);
       }
+      // a soft ray reaching from the sun toward him — the rescue light
+      const rayA = 0.08 + A.dawn * 0.3;
+      const rg2 = ctx.createLinearGradient(sxp, syp, w * 0.3, groundY);
+      rg2.addColorStop(0, `rgba(255,216,120,${rayA})`);
+      rg2.addColorStop(1, 'rgba(255,216,120,0)');
+      ctx.fillStyle = rg2;
+      ctx.beginPath();
+      ctx.moveTo(sxp - px * 2, syp);
+      ctx.lineTo(sxp + px * 2, syp);
+      ctx.lineTo(w * 0.3 + px * 7, groundY);
+      ctx.lineTo(w * 0.3 - px * 7, groundY);
+      ctx.closePath(); ctx.fill();
       // pier + figure silhouette
       ctx.fillStyle = '#241018';
       ctx.fillRect(0, groundY, w, h - groundY);
@@ -1444,6 +1541,15 @@ export default function ComeOverVisuals({
       ctx.lineTo(w * 0.83, groundY + px * 0.4);
       ctx.lineTo(fx - px * 0.5, fy - px * 3.2);
       ctx.closePath(); ctx.fill();
+      // faded centre dashes running down each road
+      ctx.fillStyle = 'rgba(210,220,255,0.13)';
+      for (let t2 = 0.16; t2 < 0.9; t2 += 0.18) {
+        const dl = px * (2.2 - t2 * 1.4);
+        const lxx = fx - px * 0.5 + (w * 0.09 - fx) * t2, lyy = fy - px * 1.6 + (groundY + px - fy) * t2;
+        ctx.fillRect(lxx, lyy, dl, px * 0.5);
+        const rxx = fx + px * 0.5 + (w * 0.91 - fx) * t2;
+        ctx.fillRect(rxx - dl, lyy, dl, px * 0.5);
+      }
       // signpost with two blank arrows, pointing apart
       const sx2 = fx + px * 5, spTop = groundY - px * 9;
       ctx.fillStyle = '#0a1024';
@@ -1987,14 +2093,14 @@ export default function ComeOverVisuals({
       const target = sceneRef.current;
       if (A.sceneCur !== target) {
         if (A.veil < 0.05) A.transitionType = transitionRef.current;
-        A.veil += (1 - A.veil) * 0.16;
+        A.veil += (1 - A.veil) * 0.13;
         if (A.veil > 0.92) {
           // walking in from the street starts fresh on each visit to the house
           if (target === 'house') { A.houseApproach = 0; A.houseHurry = false; A.knockTimer = 0; }
           A.sceneCur = target;
         }
       } else {
-        A.veil += (0 - A.veil) * 0.14;
+        A.veil += (0 - A.veil) * 0.11;
       }
 
       ctx.clearRect(0, 0, L.w, L.h);
@@ -2045,6 +2151,17 @@ export default function ComeOverVisuals({
         A.dust = A.dust.filter((d) => d.life > 0);
       }
       ctx.restore();
+
+      // whisper-thin ambient motes drifting through the air
+      if (!reduced) {
+        for (let i = 0; i < 8; i += 1) {
+          const ph = ((A.t * 0.0012) + i / 8) % 1;
+          const ax = ((i * 127) % L.w) + Math.sin(A.t * 0.008 + i * 2.1) * L.px * 3;
+          const ay = L.h * (0.15 + ((i * 61) % 55) / 100) - ph * L.h * 0.08;
+          ctx.fillStyle = `rgba(220,230,255,${0.045 + 0.035 * Math.sin(A.t * 0.02 + i)})`;
+          ctx.fillRect(ax, ay, L.px * 0.4, L.px * 0.4);
+        }
+      }
 
       // 'apology' head-bow read as a soft vignette dimming
       if (A.headBow > 0.02) {
